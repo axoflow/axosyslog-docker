@@ -22,6 +22,9 @@
  */
 
 #include "filterx/expr-generator.h"
+#include "filterx/object-dict-interface.h"
+#include "filterx/object-list-interface.h"
+#include "filterx/filterx-eval.h"
 
 /* Takes reference of fillable */
 void
@@ -40,6 +43,21 @@ _eval(FilterXExpr *s)
   FilterXObject *fillable = filterx_expr_eval_typed(self->fillable);
   if (!fillable)
     return NULL;
+
+  if (fillable->readonly)
+    {
+      filterx_eval_push_error("cannot fill object: object is readonly", self, fillable);
+      filterx_object_unref(fillable);
+      return NULL;
+    }
+
+  if (!filterx_object_is_type(fillable, &FILTERX_TYPE_NAME(dict)) &&
+      !filterx_object_is_type(fillable, &FILTERX_TYPE_NAME(list)))
+    {
+      filterx_eval_push_error("cannot fill object: dict or list is expected", self, fillable);
+      filterx_object_unref(fillable);
+      return NULL;
+    }
 
   if (self->generate(self, fillable))
     return fillable;

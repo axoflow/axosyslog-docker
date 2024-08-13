@@ -213,6 +213,7 @@ generator_assignment
 	: expr '.' LL_IDENTIFIER KW_ASSIGN expr_generator
 						{
 						  filterx_generator_set_fillable($5, filterx_getattr_new(filterx_expr_ref($1), $3));
+						 //  filterx_expr_set_location($5, lexer, &@1);
 
 						  $$ = filterx_compound_expr_new_va(TRUE,
 						    filterx_setattr_new($1, $3, filterx_generator_create_container_new($5, $1)),
@@ -224,6 +225,7 @@ generator_assignment
 	| expr '[' expr ']' KW_ASSIGN expr_generator
 						{
 						  filterx_generator_set_fillable($6, filterx_get_subscript_new(filterx_expr_ref($1), filterx_expr_ref($3)));
+						  // filterx_expr_set_location($6, lexer, &@1);
 
 						  $$ = filterx_compound_expr_new_va(TRUE,
 						    filterx_set_subscript_new($1, $3, filterx_generator_create_container_new($6, $1)),
@@ -235,6 +237,7 @@ generator_assignment
 						{
 						  FilterXExpr *minus_one = filterx_literal_new(filterx_config_freeze_object(configuration, filterx_integer_new(-1)));
 						  filterx_generator_set_fillable($5, filterx_get_subscript_new(filterx_expr_ref($1), minus_one));
+						  // filterx_expr_set_location($5, lexer, &@1);
 
 						  $$ = filterx_compound_expr_new_va(TRUE,
 						    filterx_set_subscript_new($1, NULL, filterx_generator_create_container_new($5, $1)),
@@ -247,9 +250,25 @@ generator_assignment
 	;
 
 generator_plus_assignment
-	: variable KW_PLUS_ASSIGN expr_generator			{ $$ = $3; filterx_generator_set_fillable($3, $1); }
-	| expr '[' expr ']' KW_PLUS_ASSIGN expr_generator	{ $$ = $6; filterx_generator_set_fillable($6, filterx_get_subscript_new($1, $3)); }
-	| expr '.' LL_IDENTIFIER KW_PLUS_ASSIGN expr_generator	{ $$ = $5; filterx_generator_set_fillable($5, filterx_getattr_new($1, $3)); free($3);}
+	: variable KW_PLUS_ASSIGN expr_generator
+						{
+						  filterx_generator_set_fillable($3, $1);
+						  // filterx_expr_set_location($3, lexer, &@1);
+						  $$ = $3;
+						}
+	| expr '[' expr ']' KW_PLUS_ASSIGN expr_generator
+						{
+						  filterx_generator_set_fillable($6, filterx_get_subscript_new($1, $3));
+						  // filterx_expr_set_location($6, lexer, &@1);
+						  $$ = $6;
+						}
+	| expr '.' LL_IDENTIFIER KW_PLUS_ASSIGN expr_generator
+						{
+						  filterx_generator_set_fillable($5, filterx_getattr_new($1, $3));
+						  // filterx_expr_set_location($5, lexer, &@1);
+						  free($3);
+						  $$ = $5;
+						}
 
 generator_casted_assignment
 	/* TODO extract lvalues */
@@ -261,8 +280,12 @@ generator_casted_assignment
 
 						  filterx_generator_set_fillable($5, filterx_expr_ref($1));
 
+						 FilterXExpr *assign = filterx_assign_new($1, func);
+						 assign->suppress_from_trace = TRUE;
+						 ((FilterXExpr *) $5)->suppress_from_trace = TRUE;
+
 						  $$ = filterx_compound_expr_new_va(TRUE,
-						    filterx_assign_new($1, func),
+						    assign,
 						    $5,
 						    NULL
 						  );
@@ -360,6 +383,7 @@ expr_value
 expr_generator
 	: expr_generator_unchecked		{
                                                   $$ = $1;
+						  filterx_expr_set_location($1, lexer, &@1);
                                                   CHECK_ERROR($1, @1, "error initializing generator expression");
                                                 }
         ;
