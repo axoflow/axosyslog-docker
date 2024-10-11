@@ -157,6 +157,18 @@ exit:
 }
 
 gboolean
+cfg_source_print_source_text(const gchar *filename, gint line, gint column, gint start_line)
+{
+  CFG_LTYPE yylloc = {0};
+
+  yylloc.name = filename;
+  yylloc.first_line = yylloc.last_line = line;
+  yylloc.first_column = yylloc.last_column = column;
+  _report_file_location(yylloc.name, &yylloc, start_line);
+  return TRUE;
+}
+
+gboolean
 cfg_source_print_source_context(CfgLexer *lexer, CfgIncludeLevel *level, const CFG_LTYPE *yylloc)
 {
   if (level->include_type == CFGI_FILE)
