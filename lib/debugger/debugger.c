@@ -39,6 +39,8 @@
 
 struct _Debugger
 {
+  /* debugger_get_mode() assumes this comes as the first field */
+  DebuggerMode mode;
   Tracer *tracer;
   struct iv_signal sigint;
   MainLoop *main_loop;
@@ -186,11 +188,6 @@ _cmd_help(Debugger *self, gint argc, gchar *argv[])
   return TRUE;
 }
 
-static gboolean
-_cmd_continue(Debugger *self, gint argc, gchar *argv[])
-{
-  return FALSE;
-}
 
 static gboolean
 _cmd_print(Debugger *self, gint argc, gchar *argv[])
@@ -235,21 +232,6 @@ _cmd_drop(Debugger *self, gint argc, gchar *argv[])
   return FALSE;
 }
 
-static gboolean
-_cmd_trace(Debugger *self, gint argc, gchar *argv[])
-{
-  self->breakpoint_site->msg->flags |= LF_STATE_TRACING;
-  return FALSE;
-}
-
-static gboolean
-_cmd_quit(Debugger *self, gint argc, gchar *argv[])
-{
-  main_loop_exit(self->main_loop);
-  if (self->breakpoint_site)
-    self->breakpoint_site->drop = TRUE;
-  return FALSE;
-}
 
 static gboolean
 _cmd_info_pipe(Debugger *self, LogPipe *pipe)
@@ -306,6 +288,44 @@ _cmd_list(Debugger *self, gint argc, gchar *argv[])
   if (shift)
     self->current_location.list_start += shift;
   return TRUE;
+}
+
+static inline void
+_set_mode(Debugger *self, DebuggerMode new_mode, gboolean trace_message)
+{
+  self->mode = new_mode;
+  if (self->breakpoint_site)
+    {
+      if (trace_message)
+        self->breakpoint_site->msg->flags |= LF_STATE_TRACING;
+      else
+        self->breakpoint_site->msg->flags &= ~LF_STATE_TRACING;
+    }
+}
+
+static gboolean
+_cmd_continue(Debugger *self, gint argc, gchar *argv[])
+{
+  _set_mode(self, DBG_WAITING_FOR_BREAKPOINT, FALSE);
+  return FALSE;
+}
+
+static gboolean
+_cmd_trace(Debugger *self, gint argc, gchar *argv[])
+{
+  clock_gettime(CLOCK_MONOTONIC, &self->last_trace_event);
+  _set_mode(self, DBG_FOLLOW_AND_TRACE, TRUE);
+  return FALSE;
+}
+
+static gboolean
+_cmd_quit(Debugger *self, gint argc, gchar *argv[])
+{
+  _set_mode(self, DBG_QUIT, FALSE);
+  if (self->breakpoint_site)
+    self->breakpoint_site->drop = TRUE;
+  main_loop_exit(self->main_loop);
+  return FALSE;
 }
 
 typedef gboolean (*DebuggerCommandFunc)(Debugger *self, gint argc, gchar *argv[]);
