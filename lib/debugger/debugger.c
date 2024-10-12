@@ -59,6 +59,14 @@ struct _Debugger
   LogTemplate *display_template;
 };
 
+static void
+_set_command(Debugger *self, gchar *new_command)
+{
+  if (self->command_buffer)
+    g_free(self->command_buffer);
+  self->command_buffer = g_strdup(new_command);
+}
+
 static gboolean
 _format_nvpair(NVHandle handle,
                const gchar *name,
@@ -368,16 +376,8 @@ _fetch_command(Debugger *self)
 
   command = fetch_command_func();
   if (command && strlen(command) > 0)
-    {
-      if (self->command_buffer)
-        g_free(self->command_buffer);
-      self->command_buffer = command;
-    }
-  else
-    {
-      if (command)
-        g_free(command);
-    }
+    _set_command(self, command);
+  g_free(command);
 }
 
 static gboolean
@@ -542,7 +542,7 @@ debugger_new(MainLoop *main_loop, GlobalConfig *cfg)
   self->tracer = tracer_new(cfg);
   self->cfg = cfg;
   self->display_template = log_template_new(cfg, NULL);
-  self->command_buffer = g_strdup("help");
+  _set_command(self, "help");
   log_template_compile(self->display_template, "$DATE $HOST $MSGHDR$MSG", NULL);
   return self;
 }
