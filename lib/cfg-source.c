@@ -55,13 +55,13 @@ _print_underline(const gchar *line, gint whitespace_before, gint number_of_caret
 }
 
 static void
-_print_underlined_source_block(const CFG_LTYPE *yylloc, gchar **lines, gint error_index)
+_print_underlined_source_block(const CFG_LTYPE *yylloc, gchar **lines, gsize num_lines, gint error_index)
 {
   gint line_ndx;
   gchar line_prefix[12];
   gint error_length = yylloc->last_line - yylloc->first_line + 1;
 
-  for (line_ndx = 0; lines[line_ndx]; line_ndx++)
+  for (line_ndx = 0; line_ndx < num_lines; line_ndx++)
     {
       gint lineno = yylloc->first_line + line_ndx - error_index;
       const gchar *line = lines[line_ndx];
@@ -84,8 +84,6 @@ _print_underlined_source_block(const CFG_LTYPE *yylloc, gchar **lines, gint erro
                            multi_line ? strlen(&line[yylloc->first_column]) + 1
                            : yylloc->last_column - yylloc->first_column);
         }
-      else if (line_ndx >= error_index + CONTEXT)
-        break;
     }
 }
 
@@ -116,11 +114,10 @@ _report_file_location(const gchar *filename, const CFG_LTYPE *yylloc)
       /* NOTE: do we have the appropriate number of lines? */
       if (lineno <= yylloc->first_line)
         goto exit;
-      g_ptr_array_add(context, NULL);
       fclose(f);
     }
   if (context->len > 0)
-    _print_underlined_source_block(yylloc, (gchar **) context->pdata, error_index);
+    _print_underlined_source_block(yylloc, (gchar **) context->pdata, context->len, error_index);
 
 exit:
   g_free(buf);
@@ -144,7 +141,7 @@ _report_buffer_location(const gchar *buffer_content, const CFG_LTYPE *file_lloc,
       error_index += start;
       start = 0;
     }
-  _print_underlined_source_block(file_lloc, &lines[start], error_index);
+  _print_underlined_source_block(file_lloc, &lines[start], num_lines - start, error_index);
 
 exit:
   g_strfreev(lines);
