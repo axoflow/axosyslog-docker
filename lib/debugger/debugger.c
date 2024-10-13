@@ -470,6 +470,34 @@ _handle_interactive_prompt(Debugger *self)
   printf("(continuing)\n");
 }
 
+static gboolean
+_debugger_wait_for_event(Debugger *self)
+{
+  while (1)
+    {
+      if (!tracer_wait_for_event(self->tracer, &self->breakpoint_site))
+        return FALSE;
+
+      /* this is an interrupt, let's handle it now */
+      if (!self->breakpoint_site)
+        return TRUE;
+
+      /* is this an event we are still interested in? */
+      if (debugger_is_to_stop(self, self->breakpoint_site->pipe, self->breakpoint_site->msg))
+        return TRUE;
+
+      /* not interesting now, let's resume and wait for another */
+      tracer_resume_after_event(self->tracer, self->breakpoint_site);
+    }
+  return TRUE;
+}
+
+static void
+_debugger_ack_event(Debugger *self)
+{
+  tracer_resume_after_event(self->tracer, self->breakpoint_site);
+}
+
 static gpointer
 _debugger_thread_func(Debugger *self)
 {
@@ -477,13 +505,14 @@ _debugger_thread_func(Debugger *self)
   printf("Waiting for breakpoint...\n");
   while (1)
     {
-      self->breakpoint_site = NULL;
-      if (!tracer_wait_for_event(self->tracer, &self->breakpoint_site))
+      if (!_debugger_wait_for_event(self))
         break;
 
       _handle_interactive_prompt(self);
-      tracer_resume_after_event(self->tracer, self->breakpoint_site);
+
+      _debugger_ack_event(self);
     }
+
   scratch_buffers_explicit_gc();
   app_thread_stop();
   return NULL;
