@@ -48,6 +48,7 @@ struct _Debugger
   GThread *debugger_thread;
   BreakpointSite *breakpoint_site;
   struct timespec last_trace_event;
+  gboolean starting_up;
 
   /* user interface related state */
   gchar *command_buffer;
@@ -474,10 +475,10 @@ _handle_interactive_prompt(Debugger *self)
       _display_source_line(self);
       _display_msg_with_template(self, self->breakpoint_site->msg, self->display_template);
     }
-  else
+  else if (!self->starting_up)
     {
       _set_current_location(self, NULL);
-      printf("Stopping on interrupt, message related commands are unavailable...\n");
+      printf("  Stopping on Interrupt...\n");
     }
   while (1)
     {
@@ -522,7 +523,22 @@ static gpointer
 _debugger_thread_func(Debugger *self)
 {
   app_thread_start();
-  printf("Waiting for breakpoint...\n");
+  self->breakpoint_site = NULL;
+
+  printf("axosyslog interactive debugger\n"
+         "Copyright (c) 2024 Axoflow and contributors\n\n"
+
+         "This program comes with ABSOLUTELY NO WARRANTY;\n"
+         "This is free software, and you are welcome to redistribute it\n"
+         "under certain conditions;\n"
+         "See https://github.com/axoflow/axosyslog/blob/main/COPYING\n"
+         "License LGPLV2.1+ and GPLv2+\n\n"
+
+         "For help, type \"help\".\n");
+
+  self->starting_up = TRUE;
+  _handle_interactive_prompt(self);
+  self->starting_up = FALSE;
   while (1)
     {
       if (!_debugger_wait_for_event(self))
