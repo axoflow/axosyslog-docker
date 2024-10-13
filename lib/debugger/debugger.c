@@ -167,6 +167,8 @@ _cmd_help(Debugger *self, gint argc, gchar *argv[])
              "  info, i                  Display information about the current execution state\n"
              "  list, l                  Display source code at the current location\n"
              "  continue, c              Continue until the next breakpoint\n"
+             "  step, s                  Single step\n"
+             "  follow, f                Follow this message, ignoring any other breakpoints\n"
              "  display                  Set the displayed message template\n"
              "  trace, t                 Display timing information as the message traverses the config\n"
              "  print, p                 Print the current log message\n"
@@ -311,10 +313,24 @@ _cmd_continue(Debugger *self, gint argc, gchar *argv[])
 }
 
 static gboolean
+_cmd_step(Debugger *self, gint argc, gchar *argv[])
+{
+  _set_mode(self, DBG_WAITING_FOR_STEP, FALSE);
+  return FALSE;
+}
+
+static gboolean
 _cmd_trace(Debugger *self, gint argc, gchar *argv[])
 {
   clock_gettime(CLOCK_MONOTONIC, &self->last_trace_event);
   _set_mode(self, DBG_FOLLOW_AND_TRACE, TRUE);
+  return FALSE;
+}
+
+static gboolean
+_cmd_follow(Debugger *self, gint argc, gchar *argv[])
+{
+  _set_mode(self, DBG_FOLLOW_AND_BREAK, TRUE);
   return FALSE;
 }
 
@@ -342,6 +358,10 @@ struct
   { "?",        _cmd_help },
   { "continue", _cmd_continue },
   { "c",        _cmd_continue },
+  { "step",     _cmd_step },
+  { "s",        _cmd_step },
+  { "follow",   _cmd_follow, .requires_breakpoint_site = TRUE },
+  { "f",        _cmd_follow, .requires_breakpoint_site = TRUE },
   { "print",    _cmd_print, .requires_breakpoint_site = TRUE },
   { "p",        _cmd_print, .requires_breakpoint_site = TRUE },
   { "list",     _cmd_list, },
