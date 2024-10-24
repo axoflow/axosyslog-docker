@@ -25,6 +25,7 @@
 #define DEBUGGER_TRACER_H_INCLUDED 1
 
 #include "syslog-ng.h"
+#include "logpipe.h"
 
 typedef struct _Tracer Tracer;
 
@@ -34,6 +35,7 @@ typedef struct _BreakpointSite
   gboolean resume_requested;
   LogMessage *msg;
   LogPipe *pipe;
+  const LogPathOptions *path_options;
   gboolean drop;
 } BreakpointSite;
 

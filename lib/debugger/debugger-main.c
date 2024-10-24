@@ -33,9 +33,9 @@ static gboolean
 _pipe_hook(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   if (debugger_is_to_stop(current_debugger, s, msg))
-    return debugger_stop_at_breakpoint(current_debugger, s, msg);
+    return debugger_stop_at_breakpoint(current_debugger, s, msg, path_options);
   else if (debugger_is_to_trace(current_debugger, s, msg))
-    return debugger_perform_tracing(current_debugger, s, msg);
+    return debugger_perform_tracing(current_debugger, s, msg, path_options);
   return TRUE;
 }
 

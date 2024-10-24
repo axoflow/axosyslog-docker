@@ -578,7 +578,10 @@ debugger_start_console(Debugger *self)
 }
 
 gboolean
-debugger_stop_at_breakpoint(Debugger *self, LogPipe *pipe_, LogMessage *msg)
+debugger_stop_at_breakpoint(Debugger *self,
+                            LogPipe *pipe_,
+                            LogMessage *msg,
+                            const LogPathOptions *path_options)
 {
   BreakpointSite breakpoint_site = {0};
   msg_trace("Debugger: stopping at breakpoint",
@@ -586,6 +589,7 @@ debugger_stop_at_breakpoint(Debugger *self, LogPipe *pipe_, LogMessage *msg)
 
   breakpoint_site.msg = log_msg_ref(msg);
   breakpoint_site.pipe = log_pipe_ref(pipe_);
+  breakpoint_site.path_options = path_options;
   tracer_stop_on_breakpoint(self->tracer, &breakpoint_site);
   log_msg_unref(breakpoint_site.msg);
   log_pipe_unref(breakpoint_site.pipe);
@@ -593,7 +597,10 @@ debugger_stop_at_breakpoint(Debugger *self, LogPipe *pipe_, LogMessage *msg)
 }
 
 gboolean
-debugger_perform_tracing(Debugger *self, LogPipe *pipe_, LogMessage *msg)
+debugger_perform_tracing(Debugger *self,
+                         LogPipe *pipe_,
+                         LogMessage *msg,
+                         const LogPathOptions *path_options)
 {
   struct timespec ts, *prev_ts = &self->last_trace_event;
   gchar buf[1024];
