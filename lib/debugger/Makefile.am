@@ -1,6 +1,17 @@
 debuggerincludedir			= ${pkgincludedir}/debugger
 
-EXTRA_DIST += lib/debugger/CMakeLists.txt
+EXTRA_DIST += lib/debugger/CMakeLists.txt \
+	cmd-continue.c \
+	cmd-display.c  \
+	cmd-drop.c     \
+	cmd-follow.c   \
+	cmd-help.c     \
+	cmd-info.c     \
+	cmd-list.c     \
+	cmd-print.c    \
+	cmd-quit.c     \
+	cmd-step.c     \
+	cmd-trace.c
 
 debuggerinclude_HEADERS = \
 	lib/debugger/debugger.h		\
