@@ -712,13 +712,17 @@ filter_content
 	;
 
 filterx_content
-        : _filterx_context_push <ptr>{
-            FilterXExpr *filterx_block = NULL;
+        : '{' _filterx_context_push <ptr>{
+            GList *filterx_expr_list = NULL;
 
-	    CHECK_ERROR_WITHOUT_MESSAGE(cfg_parser_parse(&filterx_parser, lexer, (gpointer *) &filterx_block, NULL), @$);
+	    CHECK_ERROR_WITHOUT_MESSAGE(cfg_parser_parse(&filterx_parser, lexer, (gpointer *) &filterx_expr_list, NULL), @$);
+
+            FilterXExpr *filterx_block = filterx_compound_expr_new(FALSE);
+            filterx_compound_expr_add_list(filterx_block, filterx_expr_list);
+	    filterx_expr_set_location_with_text(filterx_block, lexer, &@$, "{ ... }");
 
             $$ = log_expr_node_new_pipe(log_filterx_pipe_new(filterx_block, configuration), &@$);
-	  } _filterx_context_pop			{ $$ = $2; }
+	  } _filterx_context_pop '}'			{ $$ = $3; }
 	;
 
 parser_content
