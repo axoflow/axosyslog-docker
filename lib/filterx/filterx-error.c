@@ -34,7 +34,7 @@ filterx_error_clear(FilterXError *error)
 }
 
 EVTTAG *
-filterx_error_format(FilterXError *error)
+filterx_error_format_tag(FilterXError *error)
 {
 
   if (!error->message)
@@ -66,7 +66,7 @@ filterx_error_format(FilterXError *error)
 }
 
 EVTTAG *
-filterx_error_format_location(FilterXError *error)
+filterx_error_format_location_tag(FilterXError *error)
 {
   return filterx_expr_format_location_tag(error->expr);
 }

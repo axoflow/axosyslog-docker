@@ -103,19 +103,19 @@ filterx_eval_get_last_error(void)
 }
 
 EVTTAG *
-filterx_format_last_error(void)
+filterx_eval_format_last_error_tag(void)
 {
   FilterXEvalContext *context = filterx_eval_get_context();
 
-  return filterx_error_format(&context->error);
+  return filterx_error_format_tag(&context->error);
 }
 
 EVTTAG *
-filterx_format_last_error_location(void)
+filterx_eval_format_last_error_location_tag(void)
 {
   FilterXEvalContext *context = filterx_eval_get_context();
 
-  return filterx_error_format_location(&context->error);
+  return filterx_error_format_location_tag(&context->error);
 }
 
 FilterXEvalResult
@@ -129,8 +129,8 @@ filterx_eval_exec(FilterXEvalContext *context, FilterXExpr *expr, LogMessage *ms
   if (!res)
     {
       msg_debug("FILTERX ERROR",
-                filterx_format_last_error_location(),
-                filterx_format_last_error());
+                filterx_eval_format_last_error_location_tag(),
+                filterx_eval_format_last_error_tag());
       filterx_eval_clear_errors();
       goto fail;
     }
