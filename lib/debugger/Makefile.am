@@ -9,6 +9,7 @@ EXTRA_DIST += lib/debugger/CMakeLists.txt \
 	cmd-info.c     \
 	cmd-list.c     \
 	cmd-print.c    \
+	cmd-printx.c    \
 	cmd-quit.c     \
 	cmd-step.c     \
 	cmd-trace.c

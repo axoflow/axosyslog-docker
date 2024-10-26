@@ -145,6 +145,7 @@ _set_mode(Debugger *self, DebuggerMode new_mode, gboolean trace_message)
 
 #include "cmd-help.c"
 #include "cmd-print.c"
+#include "cmd-printx.c"
 #include "cmd-display.c"
 #include "cmd-drop.c"
 #include "cmd-info.c"
@@ -175,6 +176,8 @@ struct
   { "f",        _cmd_follow, .requires_breakpoint_site = TRUE },
   { "print",    _cmd_print, .requires_breakpoint_site = TRUE },
   { "p",        _cmd_print, .requires_breakpoint_site = TRUE },
+  { "printx",   _cmd_printx, .requires_breakpoint_site = TRUE },
+  { "px",       _cmd_printx, .requires_breakpoint_site = TRUE },
   { "list",     _cmd_list, },
   { "l",        _cmd_list, },
   { "display",  _cmd_display },
@@ -230,6 +233,43 @@ _fetch_command(Debugger *self)
     _set_command(self, command);
   g_free(command);
 }
+
+static void
+_setup_filterx_context(Debugger *self, FilterXEvalContext *context)
+{
+  const LogPathOptions *path_options = self->breakpoint_site->path_options;
+  if (!path_options->filterx_context)
+    {
+      /* no parent context, let's use our own, changes to variables will be
+       * lost by the time we reach the very first filterx block, but we do
+       * allow setting variables in the context of the debugger */
+
+      filterx_eval_init_context(context, path_options->filterx_context);
+      context->msgs = &self->breakpoint_site->msg;
+      context->num_msg = 1;
+    }
+  else
+    {
+      filterx_eval_set_context(path_options->filterx_context);
+    }
+}
+
+static void
+_clear_filterx_context(Debugger *self, FilterXEvalContext *context)
+{
+  const LogPathOptions *path_options = self->breakpoint_site->path_options;
+  if (!path_options->filterx_context)
+    {
+      if (filterx_scope_is_dirty(context->scope))
+        {
+          printf("Dropping variables set from the debugger, as debugger was invoked before the filterx block\n");
+        }
+      filterx_eval_deinit_context(context);
+    }
+  else
+    filterx_eval_set_context(NULL);
+}
+
 
 static gboolean
 _handle_command(Debugger *self)
@@ -290,6 +330,11 @@ _handle_interactive_prompt(Debugger *self)
       _set_current_location(self, NULL);
       printf("  Stopping on Interrupt...\n");
     }
+
+  FilterXEvalContext temporary_context;
+  if (self->breakpoint_site)
+    _setup_filterx_context(self, &temporary_context);
+
   while (1)
     {
       _fetch_command(self);
@@ -298,6 +343,8 @@ _handle_interactive_prompt(Debugger *self)
         break;
 
     }
+  if (self->breakpoint_site)
+    _clear_filterx_context(self, &temporary_context);
   printf("(continuing)\n");
 }
 
