@@ -28,15 +28,17 @@
 #include "filterx-object.h"
 #include "cfg-lexer.h"
 #include "stats/stats-counter.h"
+#include "atomic.h"
 
 struct _FilterXExpr
 {
   StatsCounterItem *eval_count;
+  GAtomicCounter ref_cnt;
+
   /* evaluate expression */
   FilterXObject *(*eval)(FilterXExpr *self);
 
   /* not thread-safe */
-  guint32 ref_cnt;
   guint32 ignore_falsy_result:1, suppress_from_trace:1, inited:1;
 
   /* not to be used except for FilterXMessageRef, replace any cached values
