@@ -136,7 +136,7 @@ _report_buffer_location(const gchar *buffer_content, const CFG_LTYPE *file_lloc,
   gchar **buffer_lines = g_strsplit(buffer_content, "\n", buf_lloc->first_line + CONTEXT + 1);
   gint buffer_num_lines = g_strv_length(buffer_lines);
 
-  if (buffer_num_lines <= buf_lloc->first_line)
+  if (buffer_num_lines < buf_lloc->first_line)
     goto exit;
 
   /* the line number in the file, which we report in the source dump, 1 based */
