@@ -99,7 +99,7 @@ filterx_eval_get_last_error(void)
 {
   FilterXEvalContext *context = filterx_eval_get_context();
 
-  return context->error.message;
+  return filterx_error_format(&context->error);
 }
 
 EVTTAG *
