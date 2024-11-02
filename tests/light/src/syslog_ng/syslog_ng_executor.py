@@ -80,7 +80,7 @@ class SyslogNgExecutor(object):
             syslog_ng_bin,
         ]
         return self.__process_executor.start(
-            command=["xterm", "-e", shlex.join(gdb_command_args)],
+            command=["xterm", "-fa", "Monospace", "-fs", "18", "-e", shlex.join(gdb_command_args)],
             stdout_path="/dev/null",
             stderr_path="/dev/null",
         )
