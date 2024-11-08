@@ -130,6 +130,13 @@ log_transport_stack_get_active(LogTransportStack *self)
   return log_transport_stack_get_transport(self, self->active_transport);
 }
 
+static inline gboolean
+log_transport_stack_poll_prepare(LogTransportStack *self, GIOCondition *cond)
+{
+  LogTransport *transport = log_transport_stack_get_active(self);
+  return log_transport_poll_prepare(transport, cond);
+}
+
 void log_transport_stack_add_factory(LogTransportStack *self, LogTransportFactory *);
 void log_transport_stack_add_transport(LogTransportStack *self, gint index, LogTransport *);
 gboolean log_transport_stack_switch(LogTransportStack *self, gint index);
