@@ -27,6 +27,6 @@
 #include "transport/logtransport.h"
 #include "transport/tls-context.h"
 
-LogTransport *log_transport_tls_new(TLSSession *tls_session, gint fd);
+LogTransport *log_transport_tls_new(TLSSession *tls_session, LogTransport *transport);
 
 #endif
