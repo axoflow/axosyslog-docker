@@ -142,6 +142,12 @@ transport_mapper_inet_setup_stack(TransportMapper *s, LogTransportStack *stack)
         return FALSE;
       initial_transport_index = LOG_TRANSPORT_HAPROXY;
     }
+  else
+    {
+      /* is this auto? */
+      if (!_setup_haproxy_transport(self, stack, initial_transport_index, LOG_TRANSPORT_NONE))
+        return FALSE;
+    }
 
   if (!log_transport_stack_switch(stack, initial_transport_index))
     g_assert_not_reached();

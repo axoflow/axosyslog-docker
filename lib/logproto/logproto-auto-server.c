@@ -37,6 +37,7 @@ typedef struct _LogProtoAutoServer
   LogProtoServer super;
 
   gboolean tls_detected;
+  gboolean haproxy_detected;
 } LogProtoAutoServer;
 
 static LogProtoServer *
@@ -118,6 +119,32 @@ _is_tls_client_hello(const gchar *buf, gsize buf_len)
   return LPAS_SUCCESS;
 }
 
+static gint
+_is_haproxy_header(const gchar *buf, gsize buf_len)
+{
+  const gchar proxy_v1_signature[] = { 0x50, 0x52, 0x4F, 0x58, 0x59, 0x20 };
+  const gchar proxy_v2_signature[] = { 0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A };
+
+  if (buf_len < sizeof(proxy_v1_signature))
+    return LPAS_NEED_MORE_DATA;
+
+  if (memcmp(buf, proxy_v1_signature, sizeof(proxy_v1_signature)) == 0)
+    return LPAS_SUCCESS;
+
+  if (buf_len < sizeof(proxy_v2_signature))
+    return LPAS_NEED_MORE_DATA;
+
+  if (memcmp(buf, proxy_v2_signature, sizeof(proxy_v2_signature)) != 0)
+    return LPAS_FAILURE;
+
+  if (buf_len < sizeof(proxy_v2_signature) + 1)
+    return LPAS_NEED_MORE_DATA;
+
+  if ((buf[sizeof(proxy_v2_signature)] & 0xf0) != 0x20)
+    return LPAS_FAILURE;
+  return LPAS_SUCCESS;
+}
+
 static LogProtoPrepareAction
 log_proto_auto_server_poll_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout G_GNUC_UNUSED)
 {
@@ -174,6 +201,33 @@ log_proto_auto_handshake(LogProtoServer *s, gboolean *handshake_finished, LogPro
           break;
         default:
           break;
+        }
+    }
+  if (!self->haproxy_detected)
+    {
+      switch (_is_haproxy_header(detect_buffer, rc))
+        {
+        case LPAS_NEED_MORE_DATA:
+          if (moved_forward)
+            return LPS_AGAIN;
+          break;
+        case LPAS_SUCCESS:
+          self->haproxy_detected = TRUE;
+          /* this is a haproxy header */
+          if (log_transport_stack_switch(&self->super.transport_stack, LOG_TRANSPORT_HAPROXY))
+            {
+              msg_debug("HAProxy header detected, switching to haproxy");
+              return LPS_AGAIN;
+            }
+          else
+            {
+              msg_error("HAProxy header detected, but haproxy transport is not set up");
+              return LPS_ERROR;
+            }
+          break;
+        default:
+          break;
+
         }
     }
   *proto_replacement = _construct_detected_proto(self, detect_buffer, rc);
