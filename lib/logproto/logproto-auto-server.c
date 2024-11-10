@@ -25,9 +25,18 @@
 #include "logproto-framed-server.h"
 #include "messages.h"
 
+enum
+{
+  LPAS_FAILURE,
+  LPAS_NEED_MORE_DATA,
+  LPAS_SUCCESS,
+};
+
 typedef struct _LogProtoAutoServer
 {
   LogProtoServer super;
+
+  gboolean tls_detected;
 } LogProtoAutoServer;
 
 static LogProtoServer *
@@ -55,6 +64,60 @@ _construct_detected_proto(LogProtoAutoServer *self, const gchar *detect_buffer, 
   return log_proto_text_server_new(NULL, self->super.options);
 }
 
+static gint
+_is_tls_client_hello(const gchar *buf, gsize buf_len)
+{
+  /*
+   * The first message on a TLS connection must be the client_hello, which
+   * is a type of handshake record, and it cannot be compressed or
+   * encrypted.  A plaintext record has this format:
+   *
+   *       0      byte    record_type      // 0x16 = handshake
+   *       1      byte    major            // major protocol version
+   *       2      byte    minor            // minor protocol version
+   *     3-4      uint16  length           // size of the payload
+   *       5      byte    handshake_type   // 0x01 = client_hello
+   *       6      uint24  length           // size of the ClientHello
+   *       9      byte    major            // major protocol version
+   *      10      byte    minor            // minor protocol version
+   *      11      uint32  gmt_unix_time
+   *      15      byte    random_bytes[28]
+   *              ...
+   */
+  if (buf_len < 1)
+    return LPAS_NEED_MORE_DATA;
+
+  /* 0x16 indicates a TLS handshake */
+  if (buf[0] != 0x16)
+    return LPAS_FAILURE;
+
+  if (buf_len < 5)
+    return LPAS_NEED_MORE_DATA;
+
+  guint32 record_len = (buf[3] << 8) + buf[4];
+
+  /* client_hello is at least 34 bytes */
+  if (record_len < 34)
+    return LPAS_FAILURE;
+
+  if (buf_len < 6)
+    return LPAS_NEED_MORE_DATA;
+
+  /* is the handshake_type 0x01 == client_hello */
+  if (buf[5] != 0x01)
+    return FALSE;
+
+  if (buf_len < 9)
+    return LPAS_NEED_MORE_DATA;
+
+  guint32 payload_size = (buf[6] << 16) + (buf[7] << 8) + buf[8];
+
+  /* The message payload can't be bigger than the enclosing record */
+  if (payload_size + 4 > record_len)
+    return LPAS_FAILURE;
+  return LPAS_SUCCESS;
+}
+
 static LogProtoPrepareAction
 log_proto_auto_server_poll_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout G_GNUC_UNUSED)
 {
@@ -73,7 +136,7 @@ static LogProtoStatus
 log_proto_auto_handshake(LogProtoServer *s, gboolean *handshake_finished, LogProtoServer **proto_replacement)
 {
   LogProtoAutoServer *self = (LogProtoAutoServer *) s;
-  gchar detect_buffer[8];
+  gchar detect_buffer[16];
   gboolean moved_forward;
   gint rc;
 
@@ -87,6 +150,32 @@ log_proto_auto_handshake(LogProtoServer *s, gboolean *handshake_finished, LogPro
       return LPS_ERROR;
     }
 
+  if (!self->tls_detected)
+    {
+      switch (_is_tls_client_hello(detect_buffer, rc))
+        {
+        case LPAS_NEED_MORE_DATA:
+          if (moved_forward)
+            return LPS_AGAIN;
+          break;
+        case LPAS_SUCCESS:
+          self->tls_detected = TRUE;
+          /* this is a TLS handshake! let's switch to TLS */
+          if (log_transport_stack_switch(&self->super.transport_stack, LOG_TRANSPORT_TLS))
+            {
+              msg_debug("TLS handshake detected, switching to TLS");
+              return LPS_AGAIN;
+            }
+          else
+            {
+              msg_error("TLS handshake detected, unable to switch to TLS, no tls() options specified");
+              return LPS_ERROR;
+            }
+          break;
+        default:
+          break;
+        }
+    }
   *proto_replacement = _construct_detected_proto(self, detect_buffer, rc);
   return LPS_SUCCESS;
 }
