@@ -25,6 +25,8 @@
 #include "logproto-framed-server.h"
 #include "messages.h"
 
+#include "transport/transport-haproxy.h"
+
 enum
 {
   LPAS_FAILURE,
@@ -213,6 +215,11 @@ log_proto_auto_handshake(LogProtoServer *s, gboolean *handshake_finished, LogPro
           break;
         case LPAS_SUCCESS:
           self->haproxy_detected = TRUE;
+
+          /* FIXME: make this a factory */
+          log_transport_stack_add_transport(&self->super.transport_stack, LOG_TRANSPORT_HAPROXY,
+                                            log_transport_haproxy_new(self->super.transport_stack.active_transport, self->super.transport_stack.active_transport));
+
           /* this is a haproxy header */
           if (log_transport_stack_switch(&self->super.transport_stack, LOG_TRANSPORT_HAPROXY))
             {

@@ -134,19 +134,13 @@ transport_mapper_inet_setup_stack(TransportMapper *s, LogTransportStack *stack)
     {
       LogTransportIndex switch_to;
 
-      if (self->tls_context && !_is_tls_required(self))
+      if (self->tls_context)
         switch_to = LOG_TRANSPORT_TLS;
       else
         switch_to = LOG_TRANSPORT_SOCKET;
       if (!_setup_haproxy_transport(self, stack, initial_transport_index, switch_to))
         return FALSE;
       initial_transport_index = LOG_TRANSPORT_HAPROXY;
-    }
-  else
-    {
-      /* is this auto? */
-      if (!_setup_haproxy_transport(self, stack, initial_transport_index, LOG_TRANSPORT_NONE))
-        return FALSE;
     }
 
   if (!log_transport_stack_switch(stack, initial_transport_index))
