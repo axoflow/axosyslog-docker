@@ -1,5 +1,6 @@
 set(ADT_HEADERS
     adt/iord_map.h
+    adt/ilist.h
     PARENT_SCOPE)
 
 set(ADT_SOURCES

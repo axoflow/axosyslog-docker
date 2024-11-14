@@ -3,7 +3,8 @@ adtincludedir = ${pkgincludedir}/adt
 EXTRA_DIST += lib/adt/CMakeLists.txt
 
 adtinclude_HEADERS = \
-    lib/adt/iord_map.h
+    lib/adt/iord_map.h \
+    lib/adt/ilist.h
 
 adt_sources = \
     lib/adt/iord_map.c
