@@ -25,6 +25,7 @@
 #define FILTERX_REF_H
 
 #include "filterx/filterx-object.h"
+#include "adt/iord_map.h"
 
 /*
  * References are currently not part of the FilterX language (hopefully, they
@@ -45,6 +46,7 @@ typedef struct _FilterXRef
 {
   FilterXObject super;
   FilterXObject *value;
+  IOrdMapNode n;
 } FilterXRef;
 
 
