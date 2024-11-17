@@ -55,6 +55,7 @@ filterxinclude_HEADERS = 			\
 	lib/filterx/func-vars.h \
 	lib/filterx/object-datetime.h \
 	lib/filterx/object-dict-interface.h \
+	lib/filterx/object-dict.h \
 	lib/filterx/object-extractor.h \
 	lib/filterx/object-json-internal.h \
 	lib/filterx/object-json.h \
@@ -120,6 +121,7 @@ filterx_sources = 				\
 	lib/filterx/func-vars.c \
 	lib/filterx/object-datetime.c \
 	lib/filterx/object-dict-interface.c \
+	lib/filterx/object-dict.c \
 	lib/filterx/object-json-array.c \
 	lib/filterx/object-json-object.c \
 	lib/filterx/object-json.c \
