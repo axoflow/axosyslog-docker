@@ -89,6 +89,7 @@ Test(iord_map, insert_lookup_and_contains)
   IOrdMap *map = iord_map_new(g_str_hash, g_str_equal, offsetof(TestKey, n), offsetof(TestData, n));
 
   TestKey key = { "key" };
+  TestKey key_same = { "key" };
   TestData value = { .a = 1, .b = 2, .c = 3 };
   TestData value2 = { .a = 4, .b = 5, .c = 6 };
 
@@ -97,7 +98,7 @@ Test(iord_map, insert_lookup_and_contains)
   TestData *actual = iord_map_lookup(map, &key);
   assert_value_equals(actual, &value);
 
-  cr_assert_not(iord_map_insert(map, &key, &value2));
+  cr_assert_not(iord_map_insert(map, &key_same, &value2));
   actual = iord_map_lookup(map, &key);
   assert_value_equals(actual, &value2);
 
@@ -194,6 +195,7 @@ Test(iord_map, reinsert_moves_key_to_end)
   IOrdMap *map = iord_map_new(g_str_hash, g_str_equal, offsetof(TestKey, n), offsetof(TestData, n));
 
   TestKey keys[] = {{"key1"}, {"key2"}, {"key3"}, {"key4"}, {"key5"}};
+  TestKey keys_reinsert = {"key1"};
   TestData values[] = {{1}, {2}, {3}, {4}, {5}};
   TestData new_value = {9};
 
@@ -202,7 +204,7 @@ Test(iord_map, reinsert_moves_key_to_end)
       iord_map_insert(map, &keys[i], &values[i]);
     }
 
-  iord_map_insert(map, &keys[0], &new_value);
+  iord_map_insert(map, &keys_reinsert, &new_value);
 
   IOrdMapNode *actual_keys = iord_map_get_keys(map);
 

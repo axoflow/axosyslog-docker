@@ -107,10 +107,13 @@ iord_map_foreach(IOrdMap *self, IOrdMapForeachFunc func, gpointer user_data)
 gboolean
 iord_map_insert(IOrdMap *self, gpointer key, gpointer value)
 {
+  IOrdMapNode *key_node = iord_map_node_from_container(key, self->key_container_offset);
+  g_assert(!key_node->next || iv_list_empty(key_node));
+
   gpointer orig_key, old_value;
   if (!g_hash_table_lookup_extended(self->ht, key, &orig_key, &old_value))
     {
-      iv_list_add_tail(iord_map_node_from_container(key, self->key_container_offset), &self->keys);
+      iv_list_add_tail(key_node, &self->keys);
       goto finish;
     }
 
@@ -128,10 +131,13 @@ finish:
 gboolean
 iord_map_prepend(IOrdMap *self, gpointer key, gpointer value)
 {
+  IOrdMapNode *key_node = iord_map_node_from_container(key, self->key_container_offset);
+  g_assert(!key_node->next || iv_list_empty(key_node));
+
   gpointer orig_key, old_value;
   if (!g_hash_table_lookup_extended(self->ht, key, &orig_key, &old_value))
     {
-      iv_list_add(iord_map_node_from_container(key, self->key_container_offset), &self->keys);
+      iv_list_add(key_node, &self->keys);
       goto finish;
     }
 
