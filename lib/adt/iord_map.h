@@ -39,8 +39,19 @@
  * memory usage.
  */
 
-typedef struct _IOrdMap IOrdMap;
 typedef struct iv_list_head IOrdMapNode;
+
+typedef struct _IOrdMap
+{
+  GHashTable *ht;
+  IOrdMapNode keys;
+  IOrdMapNode values;
+
+  GDestroyNotify key_destroy_func;
+  guint16 key_container_offset;
+  GDestroyNotify value_destroy_func;
+  guint16 value_container_offset;
+} IOrdMap;
 
 typedef gboolean (*IOrdMapForeachFunc)(gpointer key, gpointer value, gpointer user_data);
 
@@ -51,6 +62,13 @@ IOrdMap *iord_map_new_full(GHashFunc hash_func, GEqualFunc key_equal_func,
                            GDestroyNotify key_destroy_func, guint16 key_container_offset,
                            GDestroyNotify value_destroy_func, guint16 value_container_offset);
 void iord_map_free(IOrdMap *self);
+
+void iord_map_init(IOrdMap *self, GHashFunc hash_func, GEqualFunc key_equal_func,
+                   guint16 key_container_offset, guint16 value_container_offset);
+void iord_map_init_full(IOrdMap *self, GHashFunc hash_func, GEqualFunc key_equal_func,
+                        GDestroyNotify key_destroy_func, guint16 key_container_offset,
+                        GDestroyNotify value_destroy_func, guint16 value_container_offset);
+void iord_map_destroy(IOrdMap *self);
 
 gboolean iord_map_contains(IOrdMap *self, gconstpointer key);
 

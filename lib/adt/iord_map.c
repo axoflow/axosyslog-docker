@@ -27,17 +27,33 @@
 #define iord_map_node_container_of(node, offset) ((guint8 *) (node) - (intptr_t) (offset))
 #define iord_map_node_from_container(container, offset) ((IOrdMapNode *) ((guint8 *) (container) + (intptr_t) (offset)))
 
-struct _IOrdMap
-{
-  GHashTable *ht;
-  IOrdMapNode keys;
-  IOrdMapNode values;
 
-  GDestroyNotify key_destroy_func;
-  guint16 key_container_offset;
-  GDestroyNotify value_destroy_func;
-  guint16 value_container_offset;
-};
+void
+iord_map_init(IOrdMap *self, GHashFunc hash_func, GEqualFunc key_equal_func,
+              guint16 key_container_offset, guint16 value_container_offset)
+{
+  iord_map_init_full(self, hash_func, key_equal_func, NULL, key_container_offset, NULL, value_container_offset);
+}
+
+void
+iord_map_init_full(IOrdMap *self, GHashFunc hash_func, GEqualFunc key_equal_func,
+                   GDestroyNotify key_destroy_func, guint16 key_container_offset,
+                   GDestroyNotify value_destroy_func, guint16 value_container_offset)
+{
+  self->ht = g_hash_table_new_full(hash_func, key_equal_func, key_destroy_func, value_destroy_func);
+  iord_map_node_init(&self->keys);
+  iord_map_node_init(&self->values);
+  self->key_destroy_func = key_destroy_func;
+  self->key_container_offset = key_container_offset;
+  self->value_destroy_func = value_destroy_func;
+  self->value_container_offset = value_container_offset;
+}
+
+void
+iord_map_destroy(IOrdMap *self)
+{
+  g_hash_table_destroy(self->ht);
+}
 
 IOrdMap *
 iord_map_new(GHashFunc hash_func, GEqualFunc key_equal_func,
@@ -53,13 +69,8 @@ iord_map_new_full(GHashFunc hash_func, GEqualFunc key_equal_func,
 {
   IOrdMap *self = g_new0(IOrdMap, 1);
 
-  self->ht = g_hash_table_new_full(hash_func, key_equal_func, key_destroy_func, value_destroy_func);
-  iord_map_node_init(&self->keys);
-  iord_map_node_init(&self->values);
-  self->key_destroy_func = key_destroy_func;
-  self->key_container_offset = key_container_offset;
-  self->value_destroy_func = value_destroy_func;
-  self->value_container_offset = value_container_offset;
+  iord_map_init_full(self, hash_func, key_equal_func, key_destroy_func, key_container_offset,
+                     value_destroy_func, value_container_offset);
 
   return self;
 }
@@ -67,7 +78,7 @@ iord_map_new_full(GHashFunc hash_func, GEqualFunc key_equal_func,
 void
 iord_map_free(IOrdMap *self)
 {
-  g_hash_table_destroy(self->ht);
+  iord_map_destroy(self);
   g_free(self);
 }
 
