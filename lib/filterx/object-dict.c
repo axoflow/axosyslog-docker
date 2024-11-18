@@ -26,6 +26,8 @@
 #include "filterx/object-dict-interface.h"
 #include "filterx/object-extractor.h"
 #include "filterx/object-json.h"
+#include "filterx/object-string.h"
+#include "filterx/object-message-value.h"
 #include "filterx/filterx-object.h"
 #include "filterx/filterx-object-istype.h"
 #include "filterx/filterx-ref.h"
@@ -81,59 +83,211 @@ struct _FilterXDictObj
   guint8 value_cache_len;
 };
 
+static inline gboolean
+_filterx_dict_value_is_ref(FilterXDictValue *value)
+{
+  /* safe because of __null_pad */
+  return filterx_object_is_type((FilterXObject *) value, &FILTERX_TYPE_NAME(ref));
+}
+
 static gboolean
 _filterx_dict_truthy(FilterXObject *s)
 {
   return TRUE;
 }
 
+static inline gboolean
+_filterx_dict_append_json_repr(FilterXDictObj *self, GString *repr)
+{
+  FilterXObject *json = filterx_json_object_new_empty();
+  if (!filterx_dict_merge(json, &self->super.super))
+    {
+      filterx_object_unref(json);
+      return FALSE;
+    }
+
+  g_string_append(repr, filterx_json_object_to_json_literal(json));
+  filterx_object_unref(json);
+  return TRUE;
+}
+
 static gboolean
 _filterx_dict_marshal(FilterXObject *s, GString *repr, LogMessageValueType *t)
 {
-  return TRUE;
+  FilterXDictObj *self = (FilterXDictObj *) s;
+
+  *t = LM_VT_JSON;
+  return _filterx_dict_append_json_repr(self, repr);
 }
 
 static gboolean
 _filterx_dict_repr(FilterXObject *s, GString *repr)
 {
-  return TRUE;
+  FilterXDictObj *self = (FilterXDictObj *) s;
+  return _filterx_dict_append_json_repr(self, repr);
+}
+
+static gboolean
+_deep_copy_item(FilterXObject *key, FilterXObject *value, gpointer user_data)
+{
+  FilterXObject *clone = (FilterXObject *) user_data;
+
+  key = filterx_object_clone(key);
+  FilterXObject *new_value = filterx_object_clone(value);
+
+  gboolean ok = filterx_object_set_subscript(clone, key, &new_value);
+
+  filterx_object_unref(new_value);
+  filterx_object_unref(key);
+
+  return ok;
 }
 
 static FilterXObject *
 _filterx_dict_clone(FilterXObject *s)
 {
-  return NULL;
+  FilterXDictObj *self = (FilterXDictObj *) s;
+
+  FilterXObject *clone = filterx_dict_new();
+  filterx_dict_iter(&self->super.super, _deep_copy_item, clone);
+  return clone;
+}
+
+static inline gboolean
+_is_string(FilterXObject *o)
+{
+  return filterx_object_is_type(o, &FILTERX_TYPE_NAME(string))
+         || (filterx_object_is_type(o, &FILTERX_TYPE_NAME(message_value))
+             && filterx_message_value_get_type(o) == LM_VT_STRING);
 }
 
 static FilterXObject *
 _filterx_dict_get_subscript(FilterXDict *s, FilterXObject *key)
 {
-  return NULL;
+  FilterXDictObj *self = (FilterXDictObj *) s;
+
+  if (!_is_string(key))
+    return NULL;
+
+  FilterXDictKey k = { .key_obj = key };
+  FilterXDictValue *value = iord_map_lookup(&self->map, &k);
+
+  if (!value)
+    return NULL;
+
+  FilterXObject *v = _filterx_dict_value_is_ref(value) ? &value->ref.super : value->immutable.val;
+  return filterx_object_ref(v);
+}
+
+static inline FilterXDictKey *
+_key_cache_or_alloc(FilterXDictObj *self, FilterXObject *key)
+{
+  FilterXDictKey *k;
+  if (self->key_cache_len < CACHE_SIZE)
+    {
+      k = &self->key_cache[self->key_cache_len++];
+      k->in_cache = TRUE;
+    }
+  else
+    k = g_new0(FilterXDictKey, 1);
+
+  k->key_obj = filterx_object_ref(key);
+
+  return k;
+}
+
+static inline FilterXDictValue *
+_value_cache_or_alloc(FilterXDictObj *self, FilterXObject *value)
+{
+  if (filterx_object_is_type(value, &FILTERX_TYPE_NAME(ref)))
+    return (FilterXDictValue *) filterx_object_ref(value);
+
+  FilterXDictValue *v;
+  if (self->value_cache_len < CACHE_SIZE)
+    {
+      v = &self->value_cache[self->value_cache_len++];
+      v->immutable.in_cache = TRUE;
+    }
+  else
+    v = g_new0(FilterXDictValue, 1);
+
+  v->immutable.val = filterx_object_ref(value);
+
+  return v;
 }
 
 static gboolean
 _filterx_dict_set_subscript(FilterXDict *s, FilterXObject *key, FilterXObject **new_value)
 {
+  FilterXDictObj *self = (FilterXDictObj *) s;
+
+  if (!_is_string(key))
+    return FALSE;
+
+  FilterXDictKey *k = _key_cache_or_alloc(self, key);
+  FilterXDictValue *v = _value_cache_or_alloc(self, *new_value);
+
+  // map other dicts/arrays to dictobj
+  // filterx_object_set_modified_in_place(&self->super.super, TRUE);
+  //     filterx_object_set_modified_in_place(root_container, TRUE);
+
+  iord_map_insert(&self->map, k, v);
   return TRUE;
 }
 
 static gboolean
 _filterx_dict_unset_key(FilterXDict *s, FilterXObject *key)
 {
-  return TRUE;
+  FilterXDictObj *self = (FilterXDictObj *) s;
+
+  if (!_is_string(key))
+    return FALSE;
+
+  FilterXDictKey k = { .key_obj = key };
+  return iord_map_remove(&self->map, &k);
+
+  // filterx_object_set_modified_in_place(&self->super.super, TRUE);
+  //     filterx_object_set_modified_in_place(root_container, TRUE);
 }
 
 static guint64
 _filterx_dict_size(FilterXDict *s)
 {
-  return 0;
+  FilterXDictObj *self = (FilterXDictObj *) s;
+
+  return iord_map_size(&self->map);
+}
+
+static gboolean
+_filterx_dict_foreach_inner(gpointer key, gpointer value, gpointer c)
+{
+  gpointer *args = (gpointer *) c;
+  FilterXDictIterFunc func = args[0];
+  gpointer user_data = args[1];
+
+  FilterXDictKey *k = key;
+  FilterXDictValue *v = value;
+
+  return func(k->key_obj, _filterx_dict_value_is_ref(v) ? &v->ref.super : v->immutable.val, user_data);
 }
 
 static gboolean
 _filterx_dict_foreach(FilterXDict *s, FilterXDictIterFunc func, gpointer user_data)
 {
-  return TRUE;
+  FilterXDictObj *self = (FilterXDictObj *) s;
+
+  gpointer args[] = { func, user_data };
+  return iord_map_foreach(&self->map, _filterx_dict_foreach_inner, args);
 }
+/*
+
+static FilterXObject *
+_list_factory(FilterXObject *self)
+{
+  return filterx_dict_array_new_empty();
+}
+
+*/
 
 static FilterXObject *
 _filterx_dict_factory(FilterXObject *self)
@@ -141,10 +295,76 @@ _filterx_dict_factory(FilterXObject *self)
   return filterx_dict_new();
 }
 
+
 static void
 _filterx_dict_free(FilterXObject *s)
 {
+  FilterXDictObj *self = (FilterXDictObj *) s;
+
+  iord_map_destroy(&self->map);
+
+  // filterx_weakref_clear(&self->root_container);
+
   filterx_object_free_method(s);
+}
+
+#define FILTERX_DICT_KEY_STR(key) \
+  ({ \
+    const gchar *__key_str; \
+    gsize __key_str_len; \
+    g_assert(filterx_object_extract_string_ref(key->key_obj, &__key_str, &__key_str_len)); \
+    APPEND_ZERO(__key_str, __key_str, __key_str_len); \
+    __key_str; \
+  })
+
+static guint
+_key_hash(gconstpointer k)
+{
+  FilterXDictKey *key = (FilterXDictKey *) k;
+
+  const gchar *key_str = FILTERX_DICT_KEY_STR(key);
+
+  return g_str_hash(key_str);
+}
+
+static gboolean
+_key_equal(gconstpointer a, gconstpointer b)
+{
+  FilterXDictKey *key_a = (FilterXDictKey *) a;
+  FilterXDictKey *key_b = (FilterXDictKey *) b;
+
+  const gchar *key_str_a = FILTERX_DICT_KEY_STR(key_a);
+  const gchar *key_str_b = FILTERX_DICT_KEY_STR(key_b);
+
+  return g_str_equal(key_str_a, key_str_b);
+}
+
+static void
+_key_destroy(gpointer k)
+{
+  FilterXDictKey *key = (FilterXDictKey *) k;
+
+  filterx_object_unref(key->key_obj);
+
+  if (!key->in_cache)
+    g_free(key);
+}
+
+static void
+_value_destroy(gpointer v)
+{
+  FilterXDictValue *value = (FilterXDictValue *) v;
+
+  if (_filterx_dict_value_is_ref(value))
+    {
+      filterx_object_unref(&value->ref.super);
+      return;
+    }
+
+  filterx_object_unref(value->immutable.val);
+
+  if (!value->immutable.in_cache)
+    g_free(value);
 }
 
 FilterXObject *
@@ -158,6 +378,11 @@ filterx_dict_new(void)
   self->super.unset_key = _filterx_dict_unset_key;
   self->super.len = _filterx_dict_size;
   self->super.iter = _filterx_dict_foreach;
+
+  //filterx_weakref_set(&self->root_container, root);
+  //filterx_object_unref(root);
+  iord_map_init_full(&self->map, _key_hash, _key_equal, _key_destroy, offsetof(FilterXDictKey, n),
+                     _value_destroy, offsetof(FilterXDictValue, immutable.n));
 
   return &self->super.super;
 }
