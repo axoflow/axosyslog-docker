@@ -297,3 +297,14 @@ g_utf8_get_char_validated_fixed(const gchar *p, gssize max_len)
   return g_utf8_get_char_validated(p, max_len);
 }
 #endif
+
+
+#if !GLIB_CHECK_VERSION(2, 58, 0)
+gboolean
+slng_g_hash_table_steal_extended(GHashTable *hash_table, gconstpointer lookup_key,
+                                 gpointer *stolen_key, gpointer *stolen_value)
+{
+  g_hash_table_lookup_extended(hash_table, lookup_key, stolen_key, stolen_value);
+  return g_hash_table_steal(hash_table, lookup_key);
+}
+#endif
