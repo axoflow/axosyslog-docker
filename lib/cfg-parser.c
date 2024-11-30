@@ -30,8 +30,6 @@
 #include <stdlib.h>
 #include "str-utils.h"
 
-extern int main_debug;
-
 /* defined in the parser */
 int main_parse(CfgLexer *lexer, gpointer *dummy, gpointer arg);
 

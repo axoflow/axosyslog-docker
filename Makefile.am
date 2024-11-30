@@ -41,6 +41,7 @@ EXTRA_DIST		= $(filter-out ${NODIST_BUILT_SOURCES},${BUILT_SOURCES}) VERSION.txt
 			  cmake/syslog-ng.pc.cmake	\
 			  cmake/syslog-ng-native-connector.pc.cmake	\
 			  syslog-ng-ctl/CMakeLists.txt	\
+			  syslog-ng-fx/CMakeLists.txt	\
 			  requirements.txt	\
 			  dev-requirements.txt  \
 			  optional-dev-requirements.txt  \
@@ -260,6 +261,7 @@ include docker/Makefile.am
 include modules/Makefile.am
 include syslog-ng/Makefile.am
 include syslog-ng-ctl/Makefile.am
+include syslog-ng-fx/Makefile.am
 include scripts/Makefile.am
 include tests/Makefile.am
 include doc/Makefile.am

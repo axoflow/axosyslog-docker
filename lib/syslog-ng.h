@@ -58,5 +58,6 @@ typedef struct _StatsClusterLabel StatsClusterLabel;
 
 /* configuration being parsed, used by the bison generated code, NULL whenever parsing is finished. */
 extern GlobalConfig *configuration;
+extern int cfg_parser_debug;
 
 #endif

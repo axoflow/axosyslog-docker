@@ -65,10 +65,6 @@ static gboolean dummy = FALSE;
 
 static MainLoopOptions main_loop_options;
 
-#ifdef YYDEBUG
-extern int cfg_parser_debug;
-#endif
-
 static GOptionEntry syslogng_options[] =
 {
   { "version",           'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_COMBINED_VERSION ")", NULL },
