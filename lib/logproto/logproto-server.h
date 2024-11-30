@@ -83,13 +83,12 @@ struct _LogProtoServer
   AckTracker *ack_tracker;
 
   LogProtoServerWakeupCallback wakeup_callback;
-  /* FIXME: rename to something else */
-  LogProtoPrepareAction (*prepare)(LogProtoServer *s, GIOCondition *cond, gint *timeout);
+  LogProtoPrepareAction (*poll_prepare)(LogProtoServer *s, GIOCondition *cond, gint *timeout);
   gboolean (*restart_with_state)(LogProtoServer *s, PersistState *state, const gchar *persist_name);
   LogProtoStatus (*fetch)(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
                           LogTransportAuxData *aux, Bookmark *bookmark);
   gboolean (*validate_options)(LogProtoServer *s);
-  LogProtoStatus (*handshake)(LogProtoServer *s, gboolean *handshake_finished);
+  LogProtoStatus (*handshake)(LogProtoServer *s, gboolean *handshake_finished, LogProtoServer **proto_replacement);
   void (*free_fn)(LogProtoServer *s);
 };
 
@@ -100,11 +99,19 @@ log_proto_server_validate_options(LogProtoServer *self)
 }
 
 static inline LogProtoStatus
-log_proto_server_handshake(LogProtoServer *s, gboolean *handshake_finished)
+log_proto_server_handshake(LogProtoServer *s, gboolean *handshake_finished, LogProtoServer **proto_replacement)
 {
   if (s->handshake)
     {
-      return s->handshake(s, handshake_finished);
+      LogProtoStatus status;
+
+      g_assert(*proto_replacement == NULL);
+      status = s->handshake(s, handshake_finished, proto_replacement);
+      if (*proto_replacement)
+        {
+          g_assert(status == LPS_SUCCESS || status == LPS_AGAIN);
+        }
+      return status;
     }
   *handshake_finished = TRUE;
   return LPS_SUCCESS;
@@ -117,9 +124,9 @@ log_proto_server_set_options(LogProtoServer *self, const LogProtoServerOptions *
 }
 
 static inline LogProtoPrepareAction
-log_proto_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout)
+log_proto_server_poll_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout)
 {
-  LogProtoPrepareAction result = s->prepare(s, cond, timeout);
+  LogProtoPrepareAction result = s->poll_prepare(s, cond, timeout);
 
   if (result == LPPA_POLL_IO && *timeout < 0)
     *timeout = s->options->idle_timeout;

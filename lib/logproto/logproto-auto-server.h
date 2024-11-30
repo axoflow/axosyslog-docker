@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2024 Balázs Scheidler <balazs.scheidler@axoflow.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,14 +18,13 @@
  * As an additional exemption you are allowed to compile & link against the
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
+ *
  */
+#ifndef LOGPROTO_AUTO_SERVER_H_INCLUDED
+#define LOGPROTO_AUTO_SERVER_H_INCLUDED
 
-#ifndef TLSTRANSPORT_H_INCLUDED
-#define TLSTRANSPORT_H_INCLUDED
+#include "logproto-server.h"
 
-#include "transport/logtransport.h"
-#include "transport/tls-context.h"
-
-LogTransport *log_transport_tls_new(TLSSession *tls_session, LogTransport *transport);
+LogProtoServer *log_proto_auto_server_new(LogTransport *transport, const LogProtoServerOptions *options);
 
 #endif
