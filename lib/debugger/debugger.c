@@ -170,7 +170,7 @@ _cmd_help(Debugger *self, gint argc, gchar *argv[])
              "  step, s                  Single step\n"
              "  follow, f                Follow this message, ignoring any other breakpoints\n"
              "  display                  Set the displayed message template\n"
-             "  trace, t                 Display timing information as the message traverses the config\n"
+             "  trace, t                 Trace this message along the configuration\n"
              "  print, p                 Print the current log message\n"
              "  drop, d                  Drop the current message\n"
              "  quit, q                  Tell syslog-ng to exit\n"
