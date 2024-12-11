@@ -92,6 +92,7 @@ jobs:
 
           git push --force origin ${VERSION_BUMP_BRANCH}
           gh pr create \
+            --repo "${{ github.repository }}" \
             --base "${GITHUB_REF}" \
             --title "${TITLE}" \
             --body "${DESCRIPTION}" \

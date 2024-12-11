@@ -94,6 +94,7 @@ jobs:
             "${{ needs.create-release-tarball.outputs.RELEASE_TAG }}" \
             "${{ needs.create-release-tarball.outputs.TARBALL_NAME }}" \
             --draft \
+            --repo "${{ github.repository }}" \
             --title "${{ needs.create-release-tarball.outputs.RELEASE_NAME }}" \
             --notes-file "NEWS.md"
 
