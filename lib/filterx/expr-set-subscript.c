@@ -73,7 +73,7 @@ _set_subscript(FilterXSetSubscript *self, FilterXObject *object, FilterXObject *
 static inline FilterXObject *
 _suppress_error(void)
 {
-  msg_debug("FILTERX null coalesce assignment supressing error", filterx_format_last_error());
+  msg_debug("FILTERX null coalesce assignment supressing error", filterx_eval_format_last_error_tag());
   filterx_eval_clear_errors();
 
   return filterx_null_new();

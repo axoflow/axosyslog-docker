@@ -55,25 +55,24 @@ _print_underline(const gchar *line, gint whitespace_before, gint number_of_caret
 }
 
 static void
-_print_underlined_source_block(const CFG_LTYPE *yylloc, gchar **lines, gint error_index)
+_print_underlined_source_block(const CFG_LTYPE *yylloc, gchar **lines, gsize num_lines, gint start_line)
 {
   gint line_ndx;
   gchar line_prefix[12];
-  gint error_length = yylloc->last_line - yylloc->first_line + 1;
 
-  for (line_ndx = 0; lines[line_ndx]; line_ndx++)
+  for (line_ndx = 0; line_ndx < num_lines; line_ndx++)
     {
-      gint lineno = yylloc->first_line + line_ndx - error_index;
+      gint lineno = start_line + line_ndx;
       const gchar *line = lines[line_ndx];
       gint line_len = strlen(line);
       gboolean line_ends_with_newline = line_len > 0 && line[line_len - 1] == '\n';
 
       _format_source_prefix(line_prefix, sizeof(line_prefix), lineno,
-                            line_ndx >= error_index && line_ndx < error_index + error_length);
+                            lineno >= yylloc->first_line && lineno <= yylloc->last_line);
 
       fprintf(stderr, "%-8s%s%s", line_prefix, line, line_ends_with_newline ? "" : "\n");
 
-      if (line_ndx == error_index)
+      if (lineno == yylloc->first_line)
         {
           /* print the underline right below the source line we just printed */
           fprintf(stderr, "%-8s", line_prefix);
@@ -84,20 +83,24 @@ _print_underlined_source_block(const CFG_LTYPE *yylloc, gchar **lines, gint erro
                            multi_line ? strlen(&line[yylloc->first_column]) + 1
                            : yylloc->last_column - yylloc->first_column);
         }
-      else if (line_ndx >= error_index + CONTEXT)
-        break;
     }
 }
 
 static void
-_report_file_location(const gchar *filename, const CFG_LTYPE *yylloc)
+_report_file_location(const gchar *filename, const CFG_LTYPE *yylloc, gint start_line)
 {
   FILE *f;
   gint lineno = 0;
   gsize buflen = 65520;
   gchar *buf = g_malloc(buflen);
   GPtrArray *context = g_ptr_array_new();
-  gint error_index = 0;
+  gint end_line = start_line + 2*CONTEXT;
+
+  if (start_line <= 0)
+    {
+      start_line = yylloc->first_line > CONTEXT ? yylloc->first_line - CONTEXT : 1;
+      end_line = yylloc->first_line + CONTEXT;
+    }
 
   f = fopen(filename, "r");
   if (f)
@@ -105,49 +108,64 @@ _report_file_location(const gchar *filename, const CFG_LTYPE *yylloc)
       while (fgets(buf, buflen, f))
         {
           lineno++;
-          if (lineno > (gint) yylloc->first_line + CONTEXT)
+          if (lineno > end_line)
             break;
-          else if (lineno < (gint) yylloc->first_line - CONTEXT)
+          else if (lineno < start_line)
             continue;
-          else if (lineno == yylloc->first_line)
-            error_index = context->len;
           g_ptr_array_add(context, g_strdup(buf));
         }
-      /* NOTE: do we have the appropriate number of lines? */
-      if (lineno <= yylloc->first_line)
-        goto exit;
-      g_ptr_array_add(context, NULL);
       fclose(f);
     }
   if (context->len > 0)
-    _print_underlined_source_block(yylloc, (gchar **) context->pdata, error_index);
+    _print_underlined_source_block(yylloc, (gchar **) context->pdata, context->len, start_line);
 
-exit:
   g_free(buf);
   g_ptr_array_foreach(context, (GFunc) g_free, NULL);
   g_ptr_array_free(context, TRUE);
 }
 
+/* this will report source content from the buffer, but use the line numbers
+ * of the file where the block was defined.
+ *
+ *    buffer_*  => tracks buffer related information
+ *    file_*    => tracks file related information
+ */
 static void
 _report_buffer_location(const gchar *buffer_content, const CFG_LTYPE *file_lloc, const CFG_LTYPE *buf_lloc)
 {
-  gchar **lines = g_strsplit(buffer_content, "\n", buf_lloc->first_line + CONTEXT + 1);
-  gint num_lines = g_strv_length(lines);
+  gchar **buffer_lines = g_strsplit(buffer_content, "\n", buf_lloc->first_line + CONTEXT + 1);
+  gint buffer_num_lines = g_strv_length(buffer_lines);
 
-  if (num_lines <= buf_lloc->first_line)
+  if (buffer_num_lines < buf_lloc->first_line)
     goto exit;
 
-  gint start = buf_lloc->first_line - 1 - CONTEXT;
-  gint error_index = CONTEXT;
-  if (start < 0)
-    {
-      error_index += start;
-      start = 0;
-    }
-  _print_underlined_source_block(file_lloc, &lines[start], error_index);
+  /* the line number in the file, which we report in the source dump, 1 based */
+  gint range_backwards = CONTEXT;
+  if (file_lloc->first_line <= range_backwards)
+    range_backwards = file_lloc->first_line - 1;
+
+  /* the index of the line in the buffer where we start printing 0-based */
+  gint buffer_start_index = buf_lloc->first_line - 1 - range_backwards;
+  if (buffer_start_index < 0)
+    buffer_start_index = 0;
+
+  _print_underlined_source_block(file_lloc, &buffer_lines[buffer_start_index], buffer_num_lines - buffer_start_index,
+                                 file_lloc->first_line - range_backwards);
 
 exit:
-  g_strfreev(lines);
+  g_strfreev(buffer_lines);
+}
+
+gboolean
+cfg_source_print_source_text(const gchar *filename, gint line, gint column, gint start_line)
+{
+  CFG_LTYPE yylloc = {0};
+
+  yylloc.name = filename;
+  yylloc.first_line = yylloc.last_line = line;
+  yylloc.first_column = yylloc.last_column = column;
+  _report_file_location(yylloc.name, &yylloc, start_line);
+  return TRUE;
 }
 
 gboolean
@@ -155,7 +173,7 @@ cfg_source_print_source_context(CfgLexer *lexer, CfgIncludeLevel *level, const C
 {
   if (level->include_type == CFGI_FILE)
     {
-      _report_file_location(yylloc->name, yylloc);
+      _report_file_location(yylloc->name, yylloc, -1);
     }
   else if (level->include_type == CFGI_BUFFER)
     {

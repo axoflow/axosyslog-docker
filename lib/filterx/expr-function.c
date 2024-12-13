@@ -68,7 +68,7 @@ static inline FilterXExpr *
 _args_get_expr(FilterXFunctionArgs *self, guint64 index)
 {
   /* 'retrieved' is not thread-safe */
-  main_loop_assert_main_thread();
+  g_assert(cfg_parsing_in_progress());
 
   if (self->positional_args->len <= index)
     return NULL;
@@ -442,7 +442,7 @@ FilterXExpr *
 _args_get_named_expr(FilterXFunctionArgs *self, const gchar *name)
 {
   /* 'retrieved' is not thread-safe */
-  main_loop_assert_main_thread();
+  g_assert(cfg_parsing_in_progress());
 
   FilterXFunctionArg *arg = g_hash_table_lookup(self->named_args, name);
   if (!arg)

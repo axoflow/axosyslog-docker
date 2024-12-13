@@ -75,6 +75,8 @@
 /* sync filterx state to message in right before calling queue() */
 #define PIF_SYNC_FILTERX_TO_MSG      0x0200
 
+#define PIF_BREAKPOINT        0x0400
+
 /* private flags range, to be used by other LogPipe instances for their own purposes */
 
 #define PIF_PRIVATE(x)       ((x) << 16)

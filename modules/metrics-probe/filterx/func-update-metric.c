@@ -87,7 +87,7 @@ exit:
   if (!success)
     {
       /* It would be nice to introduce a counter for this. */
-      msg_debug("FilterX: Failed to process update_metric()", filterx_format_last_error());
+      msg_debug("FilterX: Failed to process update_metric()", filterx_eval_format_last_error_tag());
       filterx_eval_clear_errors();
     }
 

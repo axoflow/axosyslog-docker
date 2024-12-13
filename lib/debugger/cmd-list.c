@@ -1,6 +1,8 @@
 /*
  * Copyright (c) 2015 Balabit
  * Copyright (c) 2015 Balázs Scheidler
+ * Copyright (c) 2024 Balázs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2024 Axoflow
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,32 +23,35 @@
  * COPYING for details.
  *
  */
-#ifndef DEBUGGER_TRACER_H_INCLUDED
-#define DEBUGGER_TRACER_H_INCLUDED 1
 
-#include "syslog-ng.h"
-#include "logpipe.h"
-
-typedef struct _Tracer Tracer;
-
-/* struct to track the invocation of a breakpoint, we have an instance for each thread */
-typedef struct _BreakpointSite
+static gboolean
+_cmd_list(Debugger *self, gint argc, gchar *argv[])
 {
-  gboolean resume_requested;
-  LogMessage *msg;
-  LogPipe *pipe;
-  const LogPathOptions *path_options;
-  gboolean drop;
-} BreakpointSite;
-
-
-void tracer_stop_on_interrupt(Tracer *self);
-void tracer_stop_on_breakpoint(Tracer *self, BreakpointSite *breakpoint_site);
-gboolean tracer_wait_for_event(Tracer *self, BreakpointSite **breakpoint_site);
-void tracer_resume_after_event(Tracer *self, BreakpointSite *breakpoint_site);
-void tracer_cancel(Tracer *self);
-
-Tracer *tracer_new(GlobalConfig *cfg);
-void tracer_free(Tracer *self);
-
-#endif
+  gint shift = 11;
+  if (argc >= 2)
+    {
+      if (strcmp(argv[1], "+") == 0)
+        shift = 11;
+      else if (strcmp(argv[1], "-") == 0)
+        shift = -11;
+      else if (strcmp(argv[1], ".") == 0)
+        {
+          shift = 0;
+          if (self->breakpoint_site)
+            _set_current_location(self, self->breakpoint_site->pipe->expr_node);
+        }
+      else if (isdigit(argv[1][0]))
+        {
+          gint target_lineno = atoi(argv[1]);
+          if (target_lineno <= 0)
+            target_lineno = 1;
+          self->current_location.list_start = target_lineno;
+        }
+      /* drop any arguments for repeated execution */
+      _set_command(self, "l");
+    }
+  _display_source_line(self);
+  if (shift)
+    self->current_location.list_start += shift;
+  return TRUE;
+}

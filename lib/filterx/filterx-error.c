@@ -33,13 +33,16 @@ filterx_error_clear(FilterXError *error)
   memset(error, 0, sizeof(*error));
 }
 
-EVTTAG *
+const gchar *
 filterx_error_format(FilterXError *error)
 {
 
   if (!error->message)
-    return evt_tag_str("error", "Error information unset");
+    {
+      return "Error information unset";
+    }
 
+  GString *error_buffer = scratch_buffers_alloc();
   const gchar *extra_info = NULL;
 
   if (error->info)
@@ -59,14 +62,25 @@ filterx_error_format(FilterXError *error)
       extra_info = buf->str;
     }
 
-  return evt_tag_printf("error", "%s%s%s",
-                        error->message,
-                        extra_info ? ": " : "",
-                        extra_info ? : "");
+  g_string_assign(error_buffer, error->message);
+  if (extra_info)
+    {
+      g_string_append_len(error_buffer, ": ", 2);
+      g_string_append(error_buffer, extra_info);
+    }
+  /* the caller does not need to free str, it is a scratch buffer */
+  return error_buffer->str;
 }
 
 EVTTAG *
-filterx_error_format_location(FilterXError *error)
+filterx_error_format_tag(FilterXError *error)
+{
+  const gchar *formatted_error = filterx_error_format(error);
+  return evt_tag_str("error", formatted_error);
+}
+
+EVTTAG *
+filterx_error_format_location_tag(FilterXError *error)
 {
   return filterx_expr_format_location_tag(error->expr);
 }

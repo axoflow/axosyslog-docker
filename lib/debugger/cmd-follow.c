@@ -1,5 +1,8 @@
 /*
- * Copyright (c) 2023 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2015 Balabit
+ * Copyright (c) 2015 Balázs Scheidler
+ * Copyright (c) 2024 Balázs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2024 Axoflow
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,29 +24,9 @@
  *
  */
 
-
-#ifndef FILTERX_ERROR_H_INCLUDED
-#define FILTERX_ERROR_H_INCLUDED
-
-#include "filterx/filterx-scope.h"
-#include "filterx/filterx-expr.h"
-#include "template/eval.h"
-
-typedef struct _FilterXError
+static gboolean
+_cmd_follow(Debugger *self, gint argc, gchar *argv[])
 {
-  const gchar *message;
-  FilterXExpr *expr;
-  FilterXObject *object;
-  gchar *info;
-  gboolean free_info;
-} FilterXError;
-
-void filterx_error_clear(FilterXError *error);
-const gchar *filterx_error_format(FilterXError *error);
-EVTTAG *filterx_error_format_tag(FilterXError *error);
-EVTTAG *filterx_error_format_location_tag(FilterXError *error);
-void filterx_error_set_info(FilterXError *error, gchar *info, gboolean free_info);
-void filterx_error_set_values(FilterXError *error, const gchar *message, FilterXExpr *expr, FilterXObject *object);
-
-
-#endif
+  _set_mode(self, DBG_FOLLOW_AND_BREAK, TRUE);
+  return FALSE;
+}

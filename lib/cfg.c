@@ -544,6 +544,12 @@ cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer 
 }
 
 gboolean
+cfg_parsing_in_progress(void)
+{
+  return configuration != NULL;
+}
+
+gboolean
 cfg_run_parser_with_main_context(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer *result, gpointer arg,
                                  const gchar *desc)
 {

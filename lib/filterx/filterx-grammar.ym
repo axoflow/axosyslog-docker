@@ -164,7 +164,7 @@ construct_template_expr(LogTemplate *template)
 %%
 
 start
-        : block					{ *result = $1; if (yychar != FILTERX_EMPTY) { cfg_lexer_unput_token(lexer, &yylval); } YYACCEPT; }
+        : stmts					{ *result = $1; if (yychar != FILTERX_EMPTY) { cfg_lexer_unput_token(lexer, &yylval); } YYACCEPT; }
 	;
 
 block

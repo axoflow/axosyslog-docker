@@ -86,7 +86,7 @@ filterx_expr_free_method(FilterXExpr *self)
 void
 filterx_expr_init_instance(FilterXExpr *self)
 {
-  self->ref_cnt = 1;
+  g_atomic_counter_set(&self->ref_cnt, 1);
   self->init = filterx_expr_init_method;
   self->deinit = filterx_expr_deinit_method;
   self->free_fn = filterx_expr_free_method;
@@ -103,24 +103,21 @@ filterx_expr_new(void)
 FilterXExpr *
 filterx_expr_ref(FilterXExpr *self)
 {
-  main_loop_assert_main_thread();
-
   if (!self)
     return NULL;
 
-  self->ref_cnt++;
+  g_atomic_counter_inc(&self->ref_cnt);
   return self;
 }
 
 void
 filterx_expr_unref(FilterXExpr *self)
 {
-  main_loop_assert_main_thread();
-
   if (!self)
     return;
 
-  if (--self->ref_cnt == 0)
+  g_assert(g_atomic_counter_get(&self->ref_cnt) > 0);
+  if (g_atomic_counter_dec_and_test(&self->ref_cnt))
     {
       self->free_fn(self);
       g_free(self);
