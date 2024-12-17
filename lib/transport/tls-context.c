@@ -897,6 +897,13 @@ tls_context_set_client_sigalgs(TLSContext *self, const gchar *sigalgs, GError **
 #endif
 }
 
+void
+tls_context_set_fingerprint_alg(TLSContext *self, const gchar *fingerprint_alg)
+{
+  g_free(self->fingerprint_alg);
+  self->fingerprint_alg = g_strdup(fingerprint_alg);
+}
+
 gboolean
 tls_context_set_conf_cmds(TLSContext *self, GList *cmds, GError **error)
 {
@@ -984,6 +991,7 @@ _tls_context_free(TLSContext *self)
   g_free(self->ecdh_curve_list);
   g_free(self->sni);
   g_free(self->keylog_file_path);
+  g_free(self->fingerprint_alg);
 
   if(self->keylog_file)
     fclose(self->keylog_file);

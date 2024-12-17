@@ -199,6 +199,7 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_KEYLOG_FILE
 %token KW_OCSP_STAPLING_VERIFY
 %token KW_CONF_CMDS
+%token KW_FINGERPRINT_ALG
 
 /* INCLUDE_DECLS */
 
@@ -858,6 +859,10 @@ tls_option
         | KW_TRUSTED_KEYS '(' string_list ')'
           {
             tls_session_set_trusted_fingerprints(last_tls_context, $3);
+          }
+        | KW_FINGERPRINT_ALG '(' string ')'
+          {
+            tls_context_set_fingerprint_alg(last_tls_context, $3);
           }
         | KW_TRUSTED_DN '(' string_list ')'
           {

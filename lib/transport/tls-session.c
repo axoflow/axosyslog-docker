@@ -48,19 +48,29 @@ tls_session_configure_allow_compress(TLSSession *tls_session, gboolean allow_com
 }
 
 static gboolean
-tls_get_x509_digest(X509 *x, GString *hash_string)
+tls_get_x509_digest(const gchar *fingerprint_alg, X509 *x, GString *hash_string)
 {
   gint j;
   unsigned int n;
-  unsigned char md[EVP_MAX_MD_SIZE];
+  unsigned char buffer[EVP_MAX_MD_SIZE];
   g_assert(hash_string);
 
-  if (!X509_digest(x, EVP_sha1(), md, &n))
+  if (!fingerprint_alg)
+    fingerprint_alg = "sha1";
+  const EVP_MD *md = EVP_get_digestbyname(fingerprint_alg);
+  if (!md)
+    {
+      msg_error("Error validating trusted-keys(), unknown fingerprint-alg() specified",
+                evt_tag_str("fingerprint-alg", fingerprint_alg));
+      return FALSE;
+    }
+
+  if (!X509_digest(x, md, buffer, &n))
     return FALSE;
 
-  g_string_append(hash_string, "SHA1:");
+  g_string_append(hash_string, EVP_MD_name(md));
   for (j = 0; j < (int) n; j++)
-    g_string_append_printf(hash_string, "%02X%c", md[j], (j + 1 == (int) n) ?'\0' : ':');
+    g_string_append_printf(hash_string, ":%02X", buffer[j]);
 
   return TRUE;
 }
@@ -125,7 +135,7 @@ tls_session_verify_fingerprint(X509_STORE_CTX *ctx)
 
   hash = g_string_sized_new(EVP_MAX_MD_SIZE * 3);
 
-  if (tls_get_x509_digest(cert, hash))
+  if (tls_get_x509_digest(self->ctx->fingerprint_alg, cert, hash))
     {
       do
         {
