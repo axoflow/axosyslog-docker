@@ -68,4 +68,10 @@ gunichar g_utf8_get_char_validated_fixed (const gchar *p, gssize max_len);
 #define g_pattern_spec_match g_pattern_match
 #endif
 
+#if !GLIB_CHECK_VERSION(2, 58, 0)
+#define g_hash_table_steal_extended slng_g_hash_table_steal_extended
+gboolean slng_g_hash_table_steal_extended(GHashTable *hash_table, gconstpointer lookup_key,
+                                          gpointer *stolen_key, gpointer *stolen_value);
+#endif
+
 #endif

@@ -38,6 +38,7 @@ add_subdirectory(secret-storage)
 add_subdirectory(logthrsource)
 add_subdirectory(logthrdest)
 add_subdirectory(signal-slot-connector)
+add_subdirectory(adt)
 
 set(LIB_SUBDIR_HEADERS
     ${ACK_TRACKER_HEADERS}
@@ -66,6 +67,7 @@ set(LIB_SUBDIR_HEADERS
     ${LOGTHRDEST_HEADERS}
     ${LOGTHRSOURCE_HEADERS}
     ${SIGNAL_SLOT_CONNECTOR_HEADERS}
+    ${ADT_HEADERS}
     ${CMAKE_CURRENT_BINARY_DIR}/filter/filter-expr-grammar.h
     ${CMAKE_CURRENT_BINARY_DIR}/filterx/filterx-grammar.h
     ${CMAKE_CURRENT_BINARY_DIR}/rewrite/rewrite-expr-grammar.h
@@ -284,6 +286,7 @@ set(LIB_SOURCES
     ${LOGTHRDEST_SOURCES}
     ${LOGTHRSOURCE_SOURCES}
     ${SIGNAL_SLOT_CONNECTOR_SOURCES}
+    ${ADT_SOURCES}
     ${PROJECT_BINARY_DIR}/lib/cfg-grammar.c
     ${PROJECT_BINARY_DIR}/lib/block-ref-grammar.c
     ${PROJECT_BINARY_DIR}/lib/cfg-lex.c
@@ -435,6 +438,7 @@ install(FILES ${CSV_SCANNER_HEADERS} DESTINATION include/syslog-ng/scanner/csv-s
 install(FILES ${LOGTHRDEST_HEADERS} DESTINATION include/syslog-ng/logthrdest)
 install(FILES ${LOGTHRSOURCE_HEADERS} DESTINATION include/syslog-ng/logthrsource)
 install(FILES ${SIGNAL_SLOT_CONNECTOR_HEADERS} DESTINATION include/syslog-ng/signal-slot-connector)
+install(FILES ${ADT_HEADERS} DESTINATION include/syslog-ng/adt)
 
 set(TOOLS
     merge-grammar.py
