@@ -148,7 +148,7 @@ filterx_getattr_new(FilterXExpr *operand, FilterXString *attr_name)
 {
   FilterXGetAttr *self = g_new0(FilterXGetAttr, 1);
 
-  filterx_expr_init_instance(&self->super);
+  filterx_expr_init_instance(&self->super, "getattr");
   self->super.eval = _eval;
   self->super.unset = _unset;
   self->super.is_set = _isset;

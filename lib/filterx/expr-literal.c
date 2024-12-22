@@ -49,7 +49,7 @@ filterx_literal_new(FilterXObject *object)
 {
   FilterXLiteral *self = g_new0(FilterXLiteral, 1);
 
-  filterx_expr_init_instance(&self->super);
+  filterx_expr_init_instance(&self->super, "literal");
   self->super.eval = _eval;
   self->super.free_fn = _free;
   self->object = object;

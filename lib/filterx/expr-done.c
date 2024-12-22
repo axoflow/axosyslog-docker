@@ -40,7 +40,7 @@ FilterXExpr *
 filterx_expr_done(void)
 {
   FilterXExpr *self = g_new0(FilterXExpr, 1);
-  filterx_expr_init_instance(self);
+  filterx_expr_init_instance(self, "done");
   self->eval = _eval;
 
   return self;
