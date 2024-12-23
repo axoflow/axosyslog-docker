@@ -191,26 +191,6 @@ _free(FilterXExpr *s)
   filterx_expr_free_method(s);
 }
 
-FilterXExpr *
-filterx_nullv_setattr_new(FilterXExpr *object, FilterXString *attr_name, FilterXExpr *new_value)
-{
-  FilterXSetAttr *self = g_new0(FilterXSetAttr, 1);
-
-  filterx_expr_init_instance(&self->super, "nullv_setattr");
-  self->super.eval = _nullv_setattr_eval;
-  self->super.optimize = _optimize;
-  self->super.init = _init;
-  self->super.deinit = _deinit;
-  self->super.free_fn = _free;
-  self->object = object;
-
-  self->attr = (FilterXObject *) attr_name;
-
-  self->new_value = new_value;
-  self->super.ignore_falsy_result = TRUE;
-  return &self->super;
-}
-
 /* Takes reference of object and new_value */
 FilterXExpr *
 filterx_setattr_new(FilterXExpr *object, FilterXString *attr_name, FilterXExpr *new_value)
@@ -230,4 +210,13 @@ filterx_setattr_new(FilterXExpr *object, FilterXString *attr_name, FilterXExpr *
   self->new_value = new_value;
   self->super.ignore_falsy_result = TRUE;
   return &self->super;
+}
+
+FilterXExpr *
+filterx_nullv_setattr_new(FilterXExpr *object, FilterXString *attr_name, FilterXExpr *new_value)
+{
+  FilterXExpr *self = filterx_setattr_new(object, attr_name, new_value);
+  self->type = "nullv_setattr";
+  self->eval = _nullv_setattr_eval;
+  return self;
 }
