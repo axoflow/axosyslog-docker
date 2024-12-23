@@ -88,7 +88,9 @@ filterx_expr_optimize(FilterXExpr *self)
   optimized = filterx_expr_optimize(optimized);
 
   msg_trace("FilterX: expression optimized",
-            filterx_expr_format_location_tag(self));
+            filterx_expr_format_location_tag(self),
+            evt_tag_str("old_type", self->type),
+            evt_tag_str("new_type", optimized->type));
   if (self->lloc)
     {
       /* copy location information to the optimized representation */
