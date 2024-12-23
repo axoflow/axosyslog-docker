@@ -147,6 +147,7 @@ filterx_getattr_new(FilterXExpr *operand, FilterXString *attr_name)
   self->operand = operand;
 
   self->attr = (FilterXObject *) attr_name;
-
+  /* NOTE: name borrows the string value from the string object */
+  self->super.name = filterx_string_get_value_ref(self->attr, NULL);
   return &self->super;
 }

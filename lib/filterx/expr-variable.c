@@ -193,6 +193,9 @@ filterx_variable_expr_new(FilterXString *name, FilterXVariableType type)
   if (type == FX_VAR_MESSAGE)
     self->handle_is_macro = log_msg_is_handle_macro(filterx_variable_handle_to_nv_handle(self->handle));
 
+  /* NOTE: name borrows the string value from the string object */
+  self->super.name = filterx_string_get_value_ref(self->variable_name, NULL);
+
   return &self->super;
 }
 
