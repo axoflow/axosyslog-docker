@@ -266,6 +266,10 @@ AC_ARG_ENABLE(ebpf,
               [  --enable-ebpf           Enable support for loading of eBPF programs (default: no)]
               ,,enable_ebpf="no")
 
+AC_ARG_ENABLE(perf,
+              [  --enable-perf           Enable support for the Linux perf tool (default: auto)]
+              ,,enable_perf="auto")
+
 AC_ARG_ENABLE(gcov,
               [  --enable-gcov           Enable coverage profiling (default: no)]
               ,,enable_gcov="no")
@@ -466,6 +470,7 @@ dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
+AM_PROG_AS
 if test "x$ac_cv_prog_cc_c99" = "xno"; then
 	AC_MSG_ERROR([C99 standard compliant C compiler required. Try GCC 3.x or later.])
 fi
@@ -2060,6 +2065,16 @@ if test "x$enable_ebpf" = "xyes"; then
         AC_SUBST(BPF_CC)
 fi
 
+if test "x$enable_perf" = "xauto"; then
+	uname_s=`uname -s`
+	uname_m=`uname -m`
+	if test "$uname_s" = "Linux" -a "$uname_m" = "x86_64"; then
+		enable_perf="yes"
+	else
+		enable_perf="no"
+	fi
+fi
+
 dnl ***************************************************************************
 dnl check if we have timezone variable in <time.h>
 dnl ***************************************************************************
@@ -2243,6 +2258,7 @@ AC_DEFINE_UNQUOTED(ENABLE_IPV6, `enable_value $enable_ipv6`, [Enable IPv6 suppor
 AC_DEFINE_UNQUOTED(ENABLE_TCP_WRAPPER, `enable_value $enable_tcp_wrapper`, [Enable TCP wrapper support])
 AC_DEFINE_UNQUOTED(ENABLE_LINUX_CAPS, `enable_value $enable_linux_caps`, [Enable Linux capability management support])
 AC_DEFINE_UNQUOTED(ENABLE_EBPF, `enable_value $enable_ebpf`, [Enable Linux eBPF support])
+AC_DEFINE_UNQUOTED(ENABLE_PERF, `enable_value $enable_perf`, [Enable Linux perf support])
 AC_DEFINE_UNQUOTED(ENABLE_ENV_WRAPPER, `enable_value $enable_env_wrapper`, [Enable environment wrapper support])
 AC_DEFINE_UNQUOTED(ENABLE_SYSTEMD, `enable_value $enable_systemd`, [Enable systemd support])
 AC_DEFINE_UNQUOTED(ENABLE_KAFKA, `enable_value $enable_kafka`, [Enable kafka support])
@@ -2259,6 +2275,7 @@ AM_CONDITIONAL(ENABLE_SUN_STREAMS, [test "$enable_sun_streams" = "yes"])
 AM_CONDITIONAL(ENABLE_DARWIN_OSL, [test "$enable_darwin_osl" = "yes"])
 AM_CONDITIONAL(ENABLE_OPENBSD_SYSTEM_SOURCE, [test "$enable_openbsd_system_source" = "yes"])
 AM_CONDITIONAL(ENABLE_EBPF, [test "$enable_ebpf" = "yes"])
+AM_CONDITIONAL(ENABLE_PERF, [test "$enable_perf" = "yes"])
 AM_CONDITIONAL(ENABLE_PACCT, [test "$enable_pacct" = "yes"])
 AM_CONDITIONAL(ENABLE_MONGODB, [test "$enable_mongodb" = "yes"])
 AM_CONDITIONAL(ENABLE_SMTP, [test "$enable_smtp" = "yes"])
@@ -2414,6 +2431,7 @@ echo "  Env wrapper support         : ${enable_env_wrapper:=no}"
 echo "  systemd support             : ${enable_systemd:=no} (unit dir: ${systemdsystemunitdir:=none})"
 echo "  systemd-journal support     : ${with_systemd_journal:=no}"
 echo "  JSON support                : $with_jsonc"
+echo "  perf support                : ${enable_perf:=no}"
 echo " Build options:"
 echo "  Generate manual pages       : ${enable_manpages:=no}"
 echo "  Install manual pages        : ${enable_manpages_install:=no}"
