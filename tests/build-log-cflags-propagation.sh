@@ -79,6 +79,7 @@ find_not_prop() {
   {
     find_gcc "$@" |
     ignore_submodule_gcc |
+    ignore_trampoline_S |
     grep -vE -- " -Wshadow( |.* )-Werror "
   } 2>&1
 }
@@ -104,5 +105,11 @@ gcc( -std=gnu99)? -DHAVE_CONFIG_H -I\. -I(\.\./)+lib/ivykis/src |\
 gcc( -std=gnu99)? -DHAVE_CONFIG_H -I\. -I(\.\./)+lib/ivykis/test(.mt)? |\
 gcc( -std=gnu99)? -DHAVE_CONFIG_H -I\. -I(\.\./)+lib/ivykis/contrib/iv_getaddrinfo |\
 gcc( -std=gnu99)? -DHAVE_CONFIG_H -I\. -I(\.\./)+lib/ivykis/contrib/kojines \
+)" "$@"
+}
+
+ignore_trampoline_S() {
+  grep -vE -- "\<(\
+gcc( -std=gnu99)? -DHAVE_CONFIG_H.*lib/perf/trampoline.S \
 )" "$@"
 }
