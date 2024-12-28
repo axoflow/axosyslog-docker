@@ -34,7 +34,7 @@ filterx_generator_set_fillable(FilterXExpr *s, FilterXExpr *fillable)
 }
 
 static FilterXObject *
-_eval(FilterXExpr *s)
+_eval_generator(FilterXExpr *s)
 {
   FilterXExprGenerator *self = (FilterXExprGenerator *) s;
 
@@ -52,7 +52,7 @@ _eval(FilterXExpr *s)
 gboolean
 filterx_expr_is_generator(FilterXExpr *s)
 {
-  return s && s->eval == _eval;
+  return s && s->eval == _eval_generator;
 }
 
 FilterXExpr *
@@ -71,7 +71,7 @@ filterx_generator_init_instance(FilterXExpr *s)
   s->optimize = filterx_generator_optimize_method;
   s->init = filterx_generator_init_method;
   s->deinit = filterx_generator_deinit_method;
-  s->eval = _eval;
+  s->eval = _eval_generator;
   s->ignore_falsy_result = TRUE;
 }
 

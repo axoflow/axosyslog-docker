@@ -28,7 +28,7 @@
 #include "filterx/object-primitive.h"
 
 static FilterXObject *
-_eval(FilterXExpr *s)
+_eval_done(FilterXExpr *s)
 {
   FilterXEvalContext *context = filterx_eval_get_context();
   context->eval_control_modifier = FXC_DONE;
@@ -41,7 +41,7 @@ filterx_expr_done(void)
 {
   FilterXExpr *self = g_new0(FilterXExpr, 1);
   filterx_expr_init_instance(self, "done");
-  self->eval = _eval;
+  self->eval = _eval_done;
 
   return self;
 }

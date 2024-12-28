@@ -29,7 +29,7 @@ typedef struct _FilterXLiteral
 } FilterXLiteral;
 
 static FilterXObject *
-_eval(FilterXExpr *s)
+_eval_literal(FilterXExpr *s)
 {
   FilterXLiteral *self = (FilterXLiteral *) s;
   return filterx_object_ref(self->object);
@@ -50,7 +50,7 @@ filterx_literal_new(FilterXObject *object)
   FilterXLiteral *self = g_new0(FilterXLiteral, 1);
 
   filterx_expr_init_instance(&self->super, "literal");
-  self->super.eval = _eval;
+  self->super.eval = _eval_literal;
   self->super.free_fn = _free;
   self->object = object;
   return &self->super;
@@ -59,5 +59,5 @@ filterx_literal_new(FilterXObject *object)
 gboolean
 filterx_expr_is_literal(FilterXExpr *expr)
 {
-  return expr->eval == _eval;
+  return expr->eval == _eval_literal;
 }

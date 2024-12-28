@@ -33,7 +33,7 @@ typedef struct _FilterXGetSubscript
 } FilterXGetSubscript;
 
 static FilterXObject *
-_eval(FilterXExpr *s)
+_eval_get_subscript(FilterXExpr *s)
 {
   FilterXGetSubscript *self = (FilterXGetSubscript *) s;
   FilterXObject *result = NULL;
@@ -170,7 +170,7 @@ filterx_get_subscript_new(FilterXExpr *operand, FilterXExpr *key)
   FilterXGetSubscript *self = g_new0(FilterXGetSubscript, 1);
 
   filterx_expr_init_instance(&self->super, "get_subscript");
-  self->super.eval = _eval;
+  self->super.eval = _eval_get_subscript;
   self->super.is_set = _isset;
   self->super.unset = _unset;
   self->super.optimize = _optimize;

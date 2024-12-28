@@ -35,7 +35,7 @@ typedef struct _FilterXTemplate
 } FilterXTemplate;
 
 static FilterXObject *
-_eval(FilterXExpr *s)
+_eval_template(FilterXExpr *s)
 {
   FilterXTemplate *self = (FilterXTemplate *) s;
   FilterXEvalContext *context = filterx_eval_get_context();
@@ -102,7 +102,7 @@ filterx_template_new(LogTemplate *template)
   filterx_expr_init_instance(&self->super, "template");
   self->super.init = _template_init;
   self->super.deinit = _template_deinit;
-  self->super.eval = _eval;
+  self->super.eval = _eval_template;
   self->super.free_fn = _free;
   self->template = template;
   return &self->super;

@@ -184,7 +184,7 @@ exit:
 }
 
 static FilterXObject *
-_eval(FilterXExpr *s)
+_eval_fx_flatten(FilterXExpr *s)
 {
   FilterXFunctionFlatten *self = (FilterXFunctionFlatten *) s;
 
@@ -291,7 +291,7 @@ filterx_function_flatten_new(FilterXFunctionArgs *args, GError **error)
 {
   FilterXFunctionFlatten *self = g_new0(FilterXFunctionFlatten, 1);
   filterx_function_init_instance(&self->super, "flatten");
-  self->super.super.eval = _eval;
+  self->super.super.eval = _eval_fx_flatten;
   self->super.super.optimize = _optimize;
   self->super.super.init = _init;
   self->super.super.deinit = _deinit;

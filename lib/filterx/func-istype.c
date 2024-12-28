@@ -41,7 +41,7 @@ typedef struct FilterXFunctionIsType_
 } FilterXFunctionIsType;
 
 static FilterXObject *
-_eval(FilterXExpr *s)
+_eval_fx_istype(FilterXExpr *s)
 {
   FilterXFunctionIsType *self = (FilterXFunctionIsType *) s;
 
@@ -68,7 +68,7 @@ _optimize(FilterXExpr *s)
 
   if (filterx_expr_is_literal(self->object_expr))
     {
-      FilterXObject *optimized_object = _eval(s);
+      FilterXObject *optimized_object = _eval_fx_istype(s);
       g_assert(optimized_object);
       return filterx_literal_new(optimized_object);
     }
@@ -165,7 +165,7 @@ filterx_function_istype_new(FilterXFunctionArgs *args, GError **error)
 {
   FilterXFunctionIsType *self = g_new0(FilterXFunctionIsType, 1);
   filterx_function_init_instance(&self->super, "istype");
-  self->super.super.eval = _eval;
+  self->super.super.eval = _eval_fx_istype;
   self->super.super.optimize = _optimize;
   self->super.super.init = _init;
   self->super.super.deinit = _deinit;

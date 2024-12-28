@@ -65,7 +65,7 @@ _whiteout_variable(FilterXVariableExpr *self, FilterXEvalContext *context)
 }
 
 static FilterXObject *
-_eval(FilterXExpr *s)
+_eval_variable(FilterXExpr *s)
 {
   FilterXVariableExpr *self = (FilterXVariableExpr *) s;
   FilterXEvalContext *context = filterx_eval_get_context();
@@ -212,7 +212,7 @@ filterx_variable_expr_new(FilterXString *name, FilterXVariableType type)
   self->super.free_fn = _free;
   self->super.init = _init;
   self->super.deinit = _deinit;
-  self->super.eval = _eval;
+  self->super.eval = _eval_variable;
   self->super._update_repr = _update_repr;
   self->super.assign = _assign;
   self->super.is_set = _isset;
@@ -243,6 +243,6 @@ filterx_variable_expr_declare(FilterXExpr *s)
 {
   FilterXVariableExpr *self = (FilterXVariableExpr *) s;
 
-  g_assert(s->eval == _eval);
+  g_assert(s->eval == _eval_variable);
   self->declared = TRUE;
 }
