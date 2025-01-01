@@ -296,14 +296,8 @@ log_msg_make_writable(LogMessage **pself, const LogPathOptions *path_options)
       log_msg_unref(*pself);
       *pself = new;
     }
-  if(path_options->filterx_context && path_options->filterx_context->scope)
-    {
-      filterx_scope_make_writable(&path_options->filterx_context->scope);
-      filterx_scope_set_log_msg_has_changes(path_options->filterx_context->scope);
-    }
   return *pself;
 }
-
 
 static void
 log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, gssize name_len)

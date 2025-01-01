@@ -70,9 +70,6 @@ log_filterx_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_o
   path_options = log_path_options_chain(&local_path_options, path_options);
   filterx_eval_init_context(&eval_context, path_options->filterx_context, msg);
 
-  if (filterx_scope_has_log_msg_changes(eval_context.scope))
-    filterx_scope_invalidate_log_msg_cache(eval_context.scope);
-
   msg_trace(">>>>>> filterx rule evaluation begin",
             evt_tag_str("rule", self->name),
             log_pipe_location_tag(s),

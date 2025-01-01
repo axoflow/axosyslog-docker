@@ -27,7 +27,7 @@ struct _FilterXScope
 {
   GAtomicCounter ref_cnt;
   GArray *variables;
-  guint32 generation:20, write_protected, dirty, syncable, log_msg_has_changes;
+  guint32 generation:20, write_protected, dirty, syncable;
 };
 
 volatile gint filterx_scope_variables_max = 16;
@@ -63,24 +63,6 @@ _lookup_variable(FilterXScope *self, FilterXVariableHandle handle, FilterXVariab
     }
   *v_slot = &g_array_index(self->variables, FilterXVariable, l);
   return FALSE;
-}
-
-void
-filterx_scope_set_log_msg_has_changes(FilterXScope *self)
-{
-  self->log_msg_has_changes = TRUE;
-}
-
-void
-filterx_scope_clear_log_msg_has_changes(FilterXScope *self)
-{
-  self->log_msg_has_changes = FALSE;
-}
-
-gboolean
-filterx_scope_has_log_msg_changes(FilterXScope *self)
-{
-  return self->log_msg_has_changes;
 }
 
 void
@@ -362,38 +344,4 @@ filterx_scope_unref(FilterXScope *self)
 {
   if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
     _free(self);
-}
-
-void
-filterx_scope_invalidate_log_msg_cache(FilterXScope *self)
-{
-  g_assert(filterx_scope_has_log_msg_changes(self));
-
-  /* this is a bit hacky and the solution would be to get rid of the GArray
-   * wrapper.  GArray does not allow us to remove multiple elements in a
-   * single loop, without moving the array multiple times.  So we basically
-   * open code this instead of multiple calls to g_array_remove_index()
-   */
-
-  gint src_index, dst_index;
-  for (src_index = 0, dst_index = 0; src_index < self->variables->len; src_index++)
-    {
-      FilterXVariable *v = &g_array_index(self->variables, FilterXVariable, src_index);
-
-      if (!filterx_variable_is_floating(v) && self->syncable)
-        {
-          /* skip this variable */
-          filterx_variable_clear(v);
-        }
-      else
-        {
-          if (src_index != dst_index)
-            g_array_index(self->variables, FilterXVariable, dst_index) = g_array_index(self->variables, FilterXVariable, src_index);
-          dst_index++;
-        }
-    }
-  /* and this is the HACK: we reset the "len" member by poking that inside the GArray data structure */
-  self->variables->len = dst_index;
-
-  filterx_scope_clear_log_msg_has_changes(self);
 }
