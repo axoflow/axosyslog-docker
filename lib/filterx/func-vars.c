@@ -42,7 +42,7 @@ _add_to_dict(FilterXVariable *variable, gpointer user_data)
   gssize name_len;
   const gchar *name_str = filterx_variable_get_name(variable, &name_len);
 
-  if (!filterx_variable_is_floating(variable))
+  if (filterx_variable_is_message_tied(variable))
     {
       g_string_assign(name_buf, "$");
       g_string_append_len(name_buf, name_str, name_len);

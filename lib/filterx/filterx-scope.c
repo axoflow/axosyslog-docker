@@ -158,7 +158,7 @@ filterx_scope_register_variable(FilterXScope *self,
 
   /* the scope needs to be synced with the message if it holds a
    * message-tied variable (e.g.  $MSG) */
-  if (!filterx_variable_handle_is_floating(handle))
+  if (filterx_variable_handle_is_message_tied(handle))
     self->syncable = TRUE;
   return v;
 }
@@ -297,7 +297,7 @@ filterx_scope_clone(FilterXScope *other)
     {
       FilterXVariable *v = &g_array_index(other->variables, FilterXVariable, src_index);
 
-      if (filterx_variable_is_declared(v) || !filterx_variable_is_floating(v))
+      if (filterx_variable_is_declared(v) || filterx_variable_is_message_tied(v))
         {
           g_array_append_val(self->variables, *v);
           FilterXVariable *v_clone = &g_array_index(self->variables, FilterXVariable, dst_index);

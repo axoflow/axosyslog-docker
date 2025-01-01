@@ -82,7 +82,7 @@ _eval(FilterXExpr *s)
       return value;
     }
 
-  if (!filterx_variable_handle_is_floating(self->handle))
+  if (filterx_variable_handle_is_message_tied(self->handle))
     {
       FilterXObject *msg_ref = _pull_variable_from_message(self, context, context->msgs[0]);
       if(!msg_ref)
