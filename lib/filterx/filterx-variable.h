@@ -115,17 +115,17 @@ filterx_variable_get_value(FilterXVariable *v)
 }
 
 static inline void
-filterx_variable_set_value(FilterXVariable *v, FilterXObject *new_value)
+filterx_variable_set_value(FilterXVariable *v, FilterXObject *new_value, gboolean assignment)
 {
   filterx_object_unref(v->value);
   v->value = filterx_object_ref(new_value);
-  v->assigned = TRUE;
+  v->assigned = assignment;
 }
 
 static inline void
 filterx_variable_unset_value(FilterXVariable *v)
 {
-  filterx_variable_set_value(v, NULL);
+  filterx_variable_set_value(v, NULL, TRUE);
 }
 
 static inline gboolean

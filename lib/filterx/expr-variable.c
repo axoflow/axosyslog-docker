@@ -104,7 +104,7 @@ _update_repr(FilterXExpr *s, FilterXObject *new_repr)
   FilterXVariable *variable = filterx_scope_lookup_variable(scope, self->handle);
 
   g_assert(variable != NULL);
-  filterx_variable_set_value(variable, new_repr);
+  filterx_variable_set_value(variable, new_repr, FALSE);
 }
 
 static gboolean
@@ -130,7 +130,7 @@ _assign(FilterXExpr *s, FilterXObject *new_value)
 
   /* this only clones mutable objects */
   new_value = filterx_object_clone(new_value);
-  filterx_variable_set_value(variable, new_value);
+  filterx_variable_set_value(variable, new_value, TRUE);
   filterx_object_unref(new_value);
   return TRUE;
 }

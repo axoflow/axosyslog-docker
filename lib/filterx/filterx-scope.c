@@ -130,9 +130,7 @@ _register_variable(FilterXScope *self,
            * it was a new value */
 
           filterx_variable_set_generation(v_slot, self->generation);
-          filterx_variable_set_value(v_slot, initial_value);
-          /* consider this to be unset just as an initial registration is */
-          filterx_variable_unassign(v_slot);
+          filterx_variable_set_value(v_slot, initial_value, FALSE);
         }
       return v_slot;
     }
