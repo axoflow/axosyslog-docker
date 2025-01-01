@@ -292,7 +292,6 @@ filterx_scope_clone(FilterXScope *other)
           g_array_append_val(self->variables, *v);
           FilterXVariable *v_clone = &g_array_index(self->variables, FilterXVariable, dst_index);
 
-          filterx_variable_set_generation(v_clone, 0);
           if (v->value)
             v_clone->value = filterx_object_clone(v->value);
           else
@@ -302,7 +301,8 @@ filterx_scope_clone(FilterXScope *other)
                     evt_tag_str("variable", log_msg_get_value_name((filterx_variable_get_nv_handle(v)), NULL)));
         }
     }
-
+  /* retain the generation counter */
+  self->generation = other->generation;
   if (other->variables->len > 0)
     self->dirty = other->dirty;
   self->syncable = other->syncable;
