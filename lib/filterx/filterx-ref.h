@@ -48,8 +48,6 @@ typedef struct _FilterXRef
 } FilterXRef;
 
 
-FilterXObject *filterx_ref_new(FilterXObject *value);
-
 /* Call them only where downcasting to a specific type is needed, the returned object should only be used locally. */
 FilterXObject *filterx_ref_unwrap_ro(FilterXObject *s);
 FilterXObject *filterx_ref_unwrap_rw(FilterXObject *s);
@@ -58,6 +56,16 @@ static inline gboolean
 _filterx_type_is_referenceable(FilterXType *t)
 {
   return t->is_mutable && t != &FILTERX_TYPE_NAME(ref);
+}
+
+FilterXObject *_filterx_ref_new(FilterXObject *value);
+
+static inline FilterXObject *
+filterx_ref_new(FilterXObject *value)
+{
+  if (!value || value->readonly || !_filterx_type_is_referenceable(value->type))
+    return value;
+  return _filterx_ref_new(value);
 }
 
 #endif
