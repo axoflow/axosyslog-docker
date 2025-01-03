@@ -23,12 +23,6 @@
 #include "filterx/filterx-scope.h"
 #include "scratch-buffers.h"
 
-struct _FilterXScope
-{
-  GAtomicCounter ref_cnt;
-  GArray *variables;
-  guint32 generation:20, write_protected, dirty, syncable;
-};
 
 volatile gint filterx_scope_variables_max = 16;
 
