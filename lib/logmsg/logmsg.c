@@ -279,26 +279,6 @@ static StatsCounterItem *count_sdata_updates;
 static StatsCounterItem *count_allocated_bytes;
 static GPrivate priv_macro_value = G_PRIVATE_INIT(__free_macro_value);
 
-void
-log_msg_write_protect(LogMessage *self)
-{
-  self->write_protected = TRUE;
-}
-
-LogMessage *
-log_msg_make_writable(LogMessage **pself, const LogPathOptions *path_options)
-{
-  if (log_msg_is_write_protected(*pself))
-    {
-      LogMessage *new;
-
-      new = log_msg_clone_cow(*pself, path_options);
-      log_msg_unref(*pself);
-      *pself = new;
-    }
-  return *pself;
-}
-
 static void
 log_msg_update_sdata_slow(LogMessage *self, NVHandle handle, const gchar *name, gssize name_len)
 {

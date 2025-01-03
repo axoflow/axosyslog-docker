@@ -329,7 +329,12 @@ extern gint logmsg_node_max;
 
 LogMessage *log_msg_ref(LogMessage *m);
 void log_msg_unref(LogMessage *m);
-void log_msg_write_protect(LogMessage *m);
+
+static inline void
+log_msg_write_protect(LogMessage *self)
+{
+  self->write_protected = TRUE;
+}
 
 static inline gboolean
 log_msg_is_write_protected(const LogMessage *self)
@@ -338,7 +343,20 @@ log_msg_is_write_protected(const LogMessage *self)
 }
 
 LogMessage *log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options);
-LogMessage *log_msg_make_writable(LogMessage **pmsg, const LogPathOptions *path_options);
+
+static inline LogMessage *
+log_msg_make_writable(LogMessage **pself, const LogPathOptions *path_options)
+{
+  if (log_msg_is_write_protected(*pself))
+    {
+      LogMessage *new_msg;
+
+      new_msg = log_msg_clone_cow(*pself, path_options);
+      log_msg_unref(*pself);
+      *pself = new_msg;
+    }
+  return *pself;
+}
 
 gboolean log_msg_write(LogMessage *self, SerializeArchive *sa);
 gboolean log_msg_read(LogMessage *self, SerializeArchive *sa);
