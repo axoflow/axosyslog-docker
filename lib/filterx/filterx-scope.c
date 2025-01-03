@@ -267,20 +267,21 @@ filterx_scope_sync(FilterXScope *self, LogMessage *msg)
 }
 
 FilterXScope *
-filterx_scope_new(void)
+filterx_scope_new(FilterXScope *parent_scope)
 {
   FilterXScope *self = g_new0(FilterXScope, 1);
 
   g_atomic_counter_set(&self->ref_cnt, 1);
   self->variables = g_array_sized_new(FALSE, TRUE, sizeof(FilterXVariable), filterx_scope_variables_max);
   g_array_set_clear_func(self->variables, (GDestroyNotify) filterx_variable_clear);
+  self->parent_scope = filterx_scope_ref(parent_scope);
   return self;
 }
 
 static FilterXScope *
 filterx_scope_clone(FilterXScope *other)
 {
-  FilterXScope *self = filterx_scope_new();
+  FilterXScope *self = filterx_scope_new(other);
 
   for (gint src_index = 0, dst_index = 0; src_index < other->variables->len; src_index++)
     {
@@ -350,6 +351,7 @@ _free(FilterXScope *self)
   if (self->msg)
     log_msg_unref(self->msg);
   g_array_free(self->variables, TRUE);
+  filterx_scope_unref(self->parent_scope);
   g_free(self);
 }
 

@@ -151,7 +151,7 @@ filterx_eval_init_context(FilterXEvalContext *context, FilterXEvalContext *previ
   if (previous_context)
     scope = filterx_scope_ref(previous_context->scope);
   else
-    scope = filterx_scope_new();
+    scope = filterx_scope_new(NULL);
   filterx_scope_make_writable(&scope);
   filterx_scope_set_message(scope, msg);
 

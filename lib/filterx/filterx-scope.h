@@ -46,6 +46,7 @@ struct _FilterXScope
   guint16 write_protected:1, dirty:1, syncable:1;
   FilterXGenCounter generation;
   LogMessage *msg;
+  FilterXScope *parent_scope;
   GArray *variables;
 };
 
@@ -63,7 +64,7 @@ gboolean filterx_scope_foreach_variable(FilterXScope *self, FilterXScopeForeachF
 void filterx_scope_write_protect(FilterXScope *self);
 FilterXScope *filterx_scope_make_writable(FilterXScope **pself);
 
-FilterXScope *filterx_scope_new(void);
+FilterXScope *filterx_scope_new(FilterXScope *parent_scope);
 FilterXScope *filterx_scope_ref(FilterXScope *self);
 void filterx_scope_unref(FilterXScope *self);
 
