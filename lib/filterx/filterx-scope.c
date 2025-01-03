@@ -354,66 +354,34 @@ filterx_scope_sync(FilterXScope *self, LogMessage *msg)
   self->dirty = FALSE;
 }
 
-FilterXScope *
-filterx_scope_new(FilterXScope *parent_scope)
+gsize
+filterx_scope_get_alloc_size(void)
 {
-  gsize alloc_size = sizeof(FilterXScope) + sizeof(FilterXVariable) * filterx_scope_variables_max;
-  FilterXScope *self = g_malloc(alloc_size);
-
-  memset(self, 0, sizeof(FilterXScope));
-  g_atomic_counter_set(&self->ref_cnt, 1);
-  self->parent_scope = filterx_scope_ref(parent_scope);
-  self->variables.size = filterx_scope_variables_max;
-  self->coupled_variables = TRUE;
-  return self;
-}
-
-static FilterXScope *
-filterx_scope_clone(FilterXScope *other)
-{
-  FilterXScope *self = filterx_scope_new(other);
-
-  /* retain the generation counter */
-  self->generation = other->generation;
-  if (other->variables.len > 0)
-    self->dirty = other->dirty;
-  self->syncable = other->syncable;
-  self->msg = log_msg_ref(other->msg);
-
-  msg_trace("Filterx clone finished",
-            evt_tag_printf("scope", "%p", self),
-            evt_tag_printf("other", "%p", other),
-            evt_tag_int("dirty", self->dirty),
-            evt_tag_int("syncable", self->syncable),
-            evt_tag_int("write_protected", self->write_protected));
-  /* NOTE: we don't clone weak references, those only relate to mutable
-   * objects, which we are cloning anyway */
-  return self;
+  return sizeof(FilterXScope) + sizeof(FilterXVariable) * filterx_scope_variables_max;
 }
 
 void
-filterx_scope_write_protect(FilterXScope *self)
+filterx_scope_init_instance(FilterXScope *storage, gsize storage_size, FilterXScope *parent_scope)
 {
-  self->write_protected = TRUE;
-}
+  FilterXScope *self = storage;
+  gsize coupled_variables_size = (storage_size - sizeof(FilterXScope)) / sizeof(FilterXVariable);
 
-FilterXScope *
-filterx_scope_make_writable(FilterXScope **pself)
-{
-  if ((*pself)->write_protected)
+  memset(self, 0, sizeof(FilterXScope));
+  self->variables.size = coupled_variables_size;
+  self->coupled_variables = TRUE;
+  if (parent_scope)
     {
-      FilterXScope *new;
-
-      new = filterx_scope_clone(*pself);
-      filterx_scope_unref(*pself);
-      *pself = new;
+      self->parent_scope = parent_scope;
+      self->generation = parent_scope->generation + 1;
+      if (parent_scope->variables.len > 0)
+        self->dirty = parent_scope->dirty;
+      self->syncable = parent_scope->syncable;
+      self->msg = log_msg_ref(parent_scope->msg);
     }
-  (*pself)->generation++;
-  return *pself;
 }
 
-static void
-_free(FilterXScope *self)
+void
+filterx_scope_clear(FilterXScope *self)
 {
   /* NOTE: update the number of inlined variable allocations */
   gint variables_max = filterx_scope_variables_max;
@@ -431,21 +399,21 @@ _free(FilterXScope *self)
     }
   if (!self->coupled_variables)
     g_free(self->variables.separate);
-  filterx_scope_unref(self->parent_scope);
-  g_free(self);
 }
 
 FilterXScope *
-filterx_scope_ref(FilterXScope *self)
+filterx_scope_new(FilterXScope *parent_scope)
 {
-  if (self)
-    g_atomic_counter_inc(&self->ref_cnt);
+  gsize alloc_size = filterx_scope_get_alloc_size();
+  FilterXScope *self = g_malloc(alloc_size);
+
+  filterx_scope_init_instance(self, alloc_size, parent_scope);
   return self;
 }
 
 void
-filterx_scope_unref(FilterXScope *self)
+filterx_scope_free(FilterXScope *self)
 {
-  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
-    _free(self);
+  filterx_scope_clear(self);
+  g_free(self);
 }

@@ -66,9 +66,22 @@ log_filterx_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_o
   FilterXEvalContext eval_context;
   LogPathOptions local_path_options;
   FilterXEvalResult eval_res;
+  gboolean local_scope = FALSE;
 
   path_options = log_path_options_chain(&local_path_options, path_options);
-  filterx_eval_init_context(&eval_context, path_options->filterx_context, msg);
+
+  FilterXScope *scope = NULL;
+  if (path_options->filterx_context)
+    scope = filterx_scope_reuse(path_options->filterx_context->scope);
+
+  if (!scope)
+    {
+      gsize alloc_size = filterx_scope_get_alloc_size();
+      scope = g_alloca(alloc_size);
+      filterx_scope_init_instance(scope, alloc_size, path_options->filterx_context ? path_options->filterx_context->scope : NULL);
+      local_scope = TRUE;
+    }
+  filterx_eval_init_context(&eval_context, path_options->filterx_context, scope, msg);
 
   msg_trace(">>>>>> filterx rule evaluation begin",
             evt_tag_str("rule", self->name),
@@ -106,6 +119,8 @@ log_filterx_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_o
     }
 
   filterx_eval_deinit_context(&eval_context);
+  if (local_scope)
+    filterx_scope_clear(scope);
   nv_table_unref(payload);
 }
 

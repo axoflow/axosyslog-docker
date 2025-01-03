@@ -193,8 +193,8 @@ init_libtest_filterx(void)
   FILTERX_TYPE_NAME(test_list) = FILTERX_TYPE_NAME(json_array);
 
   filterx_env.msg = create_sample_message();
-  filterx_eval_init_context(&filterx_env.context, NULL, filterx_env.msg);
-
+  filterx_env.scope = filterx_scope_new(NULL);
+  filterx_eval_init_context(&filterx_env.context, NULL, filterx_env.scope, filterx_env.msg);
 }
 
 void
@@ -202,6 +202,7 @@ deinit_libtest_filterx(void)
 {
   log_msg_unref(filterx_env.msg);
   filterx_eval_deinit_context(&filterx_env.context);
+  filterx_scope_free(filterx_env.scope);
 }
 
 static FilterXObject *

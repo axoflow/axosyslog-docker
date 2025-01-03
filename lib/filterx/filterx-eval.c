@@ -144,15 +144,8 @@ fail:
 }
 
 void
-filterx_eval_init_context(FilterXEvalContext *context, FilterXEvalContext *previous_context, LogMessage *msg)
+filterx_eval_init_context(FilterXEvalContext *context, FilterXEvalContext *previous_context, FilterXScope *scope, LogMessage *msg)
 {
-  FilterXScope *scope;
-
-  if (previous_context)
-    scope = filterx_scope_ref(previous_context->scope);
-  else
-    scope = filterx_scope_new(NULL);
-  filterx_scope_make_writable(&scope);
   filterx_scope_set_message(scope, msg);
 
   memset(context, 0, sizeof(*context));
@@ -175,7 +168,6 @@ filterx_eval_deinit_context(FilterXEvalContext *context)
 {
   if (!context->previous_context)
     g_ptr_array_free(context->weak_refs, TRUE);
-  filterx_scope_unref(context->scope);
   filterx_eval_set_context(context->previous_context);
 }
 

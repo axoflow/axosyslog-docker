@@ -68,7 +68,7 @@ EVTTAG *filterx_format_last_error_location(void);
 void filterx_eval_clear_errors(void);
 EVTTAG *filterx_format_eval_result(FilterXEvalResult result);
 
-void filterx_eval_init_context(FilterXEvalContext *context, FilterXEvalContext *previous_context, LogMessage *msg);
+void filterx_eval_init_context(FilterXEvalContext *context, FilterXEvalContext *previous_context, FilterXScope *scope_storage, LogMessage *msg);
 void filterx_eval_deinit_context(FilterXEvalContext *context);
 
 static inline void

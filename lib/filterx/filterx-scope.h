@@ -42,7 +42,6 @@
 typedef struct _FilterXScope FilterXScope;
 struct _FilterXScope
 {
-  GAtomicCounter ref_cnt;
   guint16 write_protected:1, dirty:1, syncable:1, coupled_variables:1;
   FilterXGenCounter generation;
   LogMessage *msg;
@@ -71,13 +70,11 @@ FilterXVariable *filterx_scope_register_variable(FilterXScope *self,
                                                  FilterXVariableHandle handle);
 gboolean filterx_scope_foreach_variable(FilterXScope *self, FilterXScopeForeachFunc func, gpointer user_data);
 
-/* copy on write */
-void filterx_scope_write_protect(FilterXScope *self);
-FilterXScope *filterx_scope_make_writable(FilterXScope **pself);
-
+gsize filterx_scope_get_alloc_size(void);
+void filterx_scope_init_instance(FilterXScope *storage, gsize storage_size, FilterXScope *parent_scope);
+void filterx_scope_clear(FilterXScope *self);
 FilterXScope *filterx_scope_new(FilterXScope *parent_scope);
-FilterXScope *filterx_scope_ref(FilterXScope *self);
-void filterx_scope_unref(FilterXScope *self);
+void filterx_scope_free(FilterXScope *self);
 
 static inline void
 filterx_scope_set_dirty(FilterXScope *self)
@@ -132,6 +129,29 @@ filterx_scope_set_message(FilterXScope *self, LogMessage *msg)
   if (self->msg)
     log_msg_unref(self->msg);
   self->msg = log_msg_ref(msg);
+}
+
+/* copy on write */
+static inline void
+filterx_scope_write_protect(FilterXScope *self)
+{
+  self->write_protected = TRUE;
+}
+
+static inline gboolean
+filterx_scope_is_write_protected(FilterXScope *self)
+{
+  return self->write_protected;
+}
+
+static inline FilterXScope *
+filterx_scope_reuse(FilterXScope *self)
+{
+  if (filterx_scope_is_write_protected(self))
+    return NULL;
+
+  self->generation++;
+  return self;
 }
 
 #endif
