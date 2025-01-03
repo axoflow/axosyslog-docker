@@ -100,6 +100,20 @@ _register_variable(FilterXScope *self,
   return &g_array_index(self->variables, FilterXVariable, v_index);
 }
 
+static FilterXVariable *
+_pull_variable_from_parent_scope(FilterXScope *self, FilterXScope *scope, FilterXVariable *previous_v)
+{
+  FilterXVariable *v = _register_variable(self, previous_v->variable_type, previous_v->handle);
+
+  *v = *previous_v;
+  if (v->value)
+    v->value = filterx_object_clone(v->value);
+
+  msg_trace("Filterx scope, cloning scope variable",
+            evt_tag_str("variable", log_msg_get_value_name((filterx_variable_get_nv_handle(v)), NULL)));
+  return v;
+}
+
 FilterXVariable *
 filterx_scope_lookup_variable(FilterXScope *self, FilterXVariableHandle handle)
 {
@@ -108,6 +122,21 @@ filterx_scope_lookup_variable(FilterXScope *self, FilterXVariableHandle handle)
   if (_lookup_variable(self, handle, &v) &&
       _validate_variable(self, v))
     return v;
+
+  for (FilterXScope *scope = self->parent_scope; scope; scope = scope->parent_scope)
+    {
+      if (_lookup_variable(scope, handle, &v))
+        {
+          /* NOTE: we validate against @self */
+          if (_validate_variable(self, v))
+            return _pull_variable_from_parent_scope(self, scope, v);
+          else
+            msg_trace("Filterx scope, not cloning stale scope variable",
+                      evt_tag_str("variable", log_msg_get_value_name((filterx_variable_get_nv_handle(v)), NULL)));
+
+          return NULL;
+        }
+    }
   return NULL;
 }
 
@@ -283,24 +312,6 @@ filterx_scope_clone(FilterXScope *other)
 {
   FilterXScope *self = filterx_scope_new(other);
 
-  for (gint src_index = 0, dst_index = 0; src_index < other->variables->len; src_index++)
-    {
-      FilterXVariable *v = &g_array_index(other->variables, FilterXVariable, src_index);
-
-      if (filterx_variable_is_declared(v) || filterx_variable_is_message_tied(v))
-        {
-          g_array_append_val(self->variables, *v);
-          FilterXVariable *v_clone = &g_array_index(self->variables, FilterXVariable, dst_index);
-
-          if (v->value)
-            v_clone->value = filterx_object_clone(v->value);
-          else
-            v_clone->value = NULL;
-          dst_index++;
-          msg_trace("Filterx scope, cloning scope variable",
-                    evt_tag_str("variable", log_msg_get_value_name((filterx_variable_get_nv_handle(v)), NULL)));
-        }
-    }
   /* retain the generation counter */
   self->generation = other->generation;
   if (other->variables->len > 0)
