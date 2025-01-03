@@ -84,7 +84,7 @@ _eval(FilterXExpr *s)
 
   if (filterx_variable_handle_is_message_tied(self->handle))
     {
-      FilterXObject *msg_ref = _pull_variable_from_message(self, context, context->msgs[0]);
+      FilterXObject *msg_ref = _pull_variable_from_message(self, context, context->msg);
       if(!msg_ref)
         return NULL;
       filterx_scope_register_variable(context->scope, self->handle, msg_ref);
@@ -142,7 +142,7 @@ _isset(FilterXExpr *s)
     return filterx_variable_is_set(variable);
 
   FilterXEvalContext *context = filterx_eval_get_context();
-  LogMessage *msg = context->msgs[0];
+  LogMessage *msg = context->msg;
   return log_msg_is_value_set(msg, self->handle);
 }
 
@@ -159,7 +159,7 @@ _unset(FilterXExpr *s)
       return TRUE;
     }
 
-  LogMessage *msg = context->msgs[0];
+  LogMessage *msg = context->msg;
   if (log_msg_is_value_set(msg, self->handle))
     _whiteout_variable(self, context);
 
