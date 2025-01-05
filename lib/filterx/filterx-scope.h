@@ -96,6 +96,8 @@ filterx_scope_set_variable(FilterXScope *self, FilterXVariable *v, FilterXObject
   else
     {
       G_STATIC_ASSERT(sizeof(v->generation) == sizeof(self->msg->generation));
+      if (assignment)
+        filterx_scope_set_dirty(self);
       filterx_variable_set_value(v, value, assignment, self->msg->generation);
     }
 }
@@ -106,7 +108,10 @@ filterx_scope_unset_variable(FilterXScope *self, FilterXVariable *v)
   if (filterx_variable_is_floating(v))
     filterx_variable_unset_value(v, self->generation);
   else
-    filterx_variable_unset_value(v, self->msg->generation);
+    {
+      filterx_scope_set_dirty(self);
+      filterx_variable_unset_value(v, self->msg->generation);
+    }
 }
 
 static inline void
