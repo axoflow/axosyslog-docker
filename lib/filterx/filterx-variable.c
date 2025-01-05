@@ -47,13 +47,10 @@ filterx_variable_clear(FilterXVariable *v)
 void
 filterx_variable_init_instance(FilterXVariable *v,
                                FilterXVariableType variable_type,
-                               FilterXVariableHandle handle,
-                               FilterXObject *initial_value,
-                               guint32 generation)
+                               FilterXVariableHandle handle)
 {
-  v->handle = handle;
   v->variable_type = variable_type;
+  v->handle = handle;
   v->assigned = FALSE;
-  v->generation = generation;
-  v->value = filterx_object_ref(initial_value);
+  v->value = NULL;
 }

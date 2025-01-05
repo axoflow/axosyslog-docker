@@ -41,31 +41,6 @@ typedef struct _FilterXVariableExpr
 } FilterXVariableExpr;
 
 static FilterXObject *
-_pull_variable_from_message(FilterXVariableExpr *self, FilterXEvalContext *context, LogMessage *msg)
-{
-  gssize value_len;
-  LogMessageValueType t;
-  const gchar *value = log_msg_get_value_if_set_with_type(msg, self->handle, &value_len, &t);
-  if (!value)
-    {
-      filterx_eval_push_error("No such name-value pair in the log message", &self->super, self->variable_name);
-      return NULL;
-    }
-
-  if (self->handle_is_macro)
-    return filterx_message_value_new(value, value_len, t);
-  else
-    return filterx_message_value_new_borrowed(value, value_len, t);
-}
-
-/* NOTE: unset on a variable that only exists in the LogMessage, without making the message writable */
-static void
-_whiteout_variable(FilterXVariableExpr *self, FilterXEvalContext *context)
-{
-  filterx_scope_register_variable(context->scope, FX_VAR_MESSAGE_TIED, self->handle, NULL);
-}
-
-static FilterXObject *
 _eval_variable(FilterXExpr *s)
 {
   FilterXVariableExpr *self = (FilterXVariableExpr *) s;
@@ -75,7 +50,7 @@ _eval_variable(FilterXExpr *s)
   variable = filterx_scope_lookup_variable(context->scope, self->handle);
   if (variable)
     {
-      FilterXObject *value = filterx_variable_get_value(variable);
+      FilterXObject *value = filterx_scope_get_variable(context->scope, variable);
       if (!value)
         {
           filterx_eval_push_error("Variable is unset", &self->super, self->variable_name);
@@ -83,13 +58,12 @@ _eval_variable(FilterXExpr *s)
       return value;
     }
 
-  if (filterx_variable_handle_is_message_tied(self->handle))
+  if (self->variable_type == FX_VAR_MESSAGE_TIED)
     {
-      FilterXObject *msg_ref = _pull_variable_from_message(self, context, context->msg);
-      if(!msg_ref)
-        return NULL;
-      filterx_scope_register_variable(context->scope, FX_VAR_MESSAGE_TIED, self->handle, msg_ref);
-      return msg_ref;
+      /* auto register message tied variables */
+      variable = filterx_scope_register_variable(context->scope, self->variable_type, self->handle);
+      if (variable)
+        return filterx_variable_get_value(variable);
     }
 
   filterx_eval_push_error("No such variable", s, self->variable_name);
@@ -100,19 +74,17 @@ static void
 _update_repr(FilterXExpr *s, FilterXObject *new_repr)
 {
   FilterXVariableExpr *self = (FilterXVariableExpr *) s;
-  FilterXScope *scope = filterx_eval_get_scope();
-  FilterXVariable *variable = filterx_scope_lookup_variable(scope, self->handle);
+  FilterXEvalContext *context = filterx_eval_get_context();
+  FilterXScope *scope = context->scope;
 
-  g_assert(variable != NULL);
-  filterx_variable_set_value(variable, new_repr, FALSE);
+  FilterXVariable *variable = filterx_scope_lookup_variable(scope, self->handle);
+  filterx_scope_set_variable(scope, variable, new_repr, FALSE);
 }
 
 static gboolean
 _assign(FilterXExpr *s, FilterXObject *new_value)
 {
   FilterXVariableExpr *self = (FilterXVariableExpr *) s;
-  FilterXScope *scope = filterx_eval_get_scope();
-  FilterXVariable *variable = filterx_scope_lookup_variable(scope, self->handle);
 
   if (self->handle_is_macro)
     {
@@ -120,17 +92,16 @@ _assign(FilterXExpr *s, FilterXObject *new_value)
       return FALSE;
     }
 
-  if (!variable)
-    {
-      /* NOTE: we pass NULL as initial_value to make sure the new variable
-       * is considered changed due to the assignment */
+  FilterXEvalContext *context = filterx_eval_get_context();
+  FilterXScope *scope = context->scope;
+  FilterXVariable *variable = filterx_scope_lookup_variable(scope, self->handle);
 
-      variable = filterx_scope_register_variable(scope, self->variable_type, self->handle, NULL);
-    }
+  if (!variable)
+    variable = filterx_scope_register_variable(scope, self->variable_type, self->handle);
 
   /* this only clones mutable objects */
   new_value = filterx_object_clone(new_value);
-  filterx_variable_set_value(variable, new_value, TRUE);
+  filterx_scope_set_variable(scope, variable, new_value, TRUE);
   filterx_object_unref(new_value);
   return TRUE;
 }
@@ -139,15 +110,17 @@ static gboolean
 _isset(FilterXExpr *s)
 {
   FilterXVariableExpr *self = (FilterXVariableExpr *) s;
-  FilterXScope *scope = filterx_eval_get_scope();
+  FilterXEvalContext *context = filterx_eval_get_context();
+  FilterXScope *scope = context->scope;
+  LogMessage *msg = context->msg;
 
   FilterXVariable *variable = filterx_scope_lookup_variable(scope, self->handle);
   if (variable)
     return filterx_variable_is_set(variable);
 
-  FilterXEvalContext *context = filterx_eval_get_context();
-  LogMessage *msg = context->msg;
-  return log_msg_is_value_set(msg, self->handle);
+  if (self->variable_type == FX_VAR_MESSAGE_TIED)
+    return log_msg_is_value_set(msg, filterx_variable_handle_to_nv_handle(self->handle));
+  return FALSE;
 }
 
 static gboolean
@@ -162,17 +135,25 @@ _unset(FilterXExpr *s)
     }
 
   FilterXEvalContext *context = filterx_eval_get_context();
+  FilterXScope *scope = context->scope;
+  LogMessage *msg = context->msg;
 
   FilterXVariable *variable = filterx_scope_lookup_variable(context->scope, self->handle);
   if (variable)
     {
-      filterx_variable_unset_value(variable);
+      filterx_scope_unset_variable(scope, variable);
       return TRUE;
     }
 
-  LogMessage *msg = context->msg;
-  if (log_msg_is_value_set(msg, self->handle))
-    _whiteout_variable(self, context);
+  if (self->variable_type == FX_VAR_MESSAGE_TIED)
+    {
+      if (log_msg_is_value_set(msg, self->handle))
+        {
+          FilterXVariable *v = filterx_scope_register_variable(context->scope, self->variable_type, self->handle);
+          /* make sure it is considered changed */
+          filterx_scope_unset_variable(context->scope, v);
+        }
+    }
 
   return TRUE;
 }

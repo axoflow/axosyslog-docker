@@ -188,6 +188,38 @@ def test_message_tied_variables_do_not_propagate_to_parallel_branches(config, sy
     assert file_false.read_log() == "kecske\n"
 
 
+def test_message_tied_variables_are_invalidated_if_message_is_changed(config, syslog_ng):
+    (file_true, file_false, file_final) = create_config(
+        config, init_exprs=[
+            """
+                declare foo = $MSG;
+                foo;
+                $MSG;
+                foo == "foobar";
+                $MSG == "foobar";
+            """,
+        ], init_log_exprs=[
+            """
+                rewrite {
+                    set("foobar replacement" value("MSG"));
+                };
+            """
+        ], true_exprs=[
+            """
+                $MSG;
+                foo;
+                $MSG == "foobar replacement";
+                foo == "foobar";
+            """,
+        ],
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    assert file_true.read_log() == "foobar replacement\n"
+
+
 def test_message_tied_variables_are_not_considered_changed_just_by_unmarshaling(config, syslog_ng):
     (file_true, file_false, file_final) = create_config(
         config, init_exprs=[

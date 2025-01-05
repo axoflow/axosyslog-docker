@@ -36,9 +36,8 @@ typedef enum
   FX_VAR_DECLARED_FLOATING,
 } FilterXVariableType;
 
-#define FILTERX_SCOPE_MAX_GENERATION ((1UL << 20) - 1)
-
 typedef guint32 FilterXVariableHandle;
+typedef guint16 FilterXGenCounter;
 
 #define FILTERX_HANDLE_FLOATING_BIT (1UL << 31)
 
@@ -71,17 +70,15 @@ typedef struct _FilterXVariable
    *
    * declared -- this variable is declared (e.g. retained for the entire input pipeline)
    */
-  guint32 assigned:1,
-          variable_type:2,
-          generation:20;
+  guint16 assigned:1,
+          variable_type:2;
+  FilterXGenCounter generation;
   FilterXObject *value;
 } FilterXVariable;
 
 void filterx_variable_init_instance(FilterXVariable *v,
                                     FilterXVariableType variable_type,
-                                    FilterXVariableHandle handle,
-                                    FilterXObject *initial_value,
-                                    guint32 generation);
+                                    FilterXVariableHandle handle);
 void filterx_variable_clear(FilterXVariable *v);
 
 static inline gboolean
@@ -115,17 +112,18 @@ filterx_variable_get_value(FilterXVariable *v)
 }
 
 static inline void
-filterx_variable_set_value(FilterXVariable *v, FilterXObject *new_value, gboolean assignment)
+filterx_variable_set_value(FilterXVariable *v, FilterXObject *new_value, gboolean assignment, FilterXGenCounter generation)
 {
   filterx_object_unref(v->value);
   v->value = filterx_object_ref(new_value);
   v->assigned = assignment;
+  v->generation = generation;
 }
 
 static inline void
-filterx_variable_unset_value(FilterXVariable *v)
+filterx_variable_unset_value(FilterXVariable *v, FilterXGenCounter generation)
 {
-  filterx_variable_set_value(v, NULL, TRUE);
+  filterx_variable_set_value(v, NULL, TRUE, generation);
 }
 
 static inline gboolean
@@ -147,13 +145,13 @@ filterx_variable_is_assigned(FilterXVariable *v)
 }
 
 static inline gboolean
-filterx_variable_is_same_generation(FilterXVariable *v, guint32 generation)
+filterx_variable_is_same_generation(FilterXVariable *v, FilterXGenCounter generation)
 {
   return v->generation == generation;
 }
 
 static inline void
-filterx_variable_set_generation(FilterXVariable *v, guint32 generation)
+filterx_variable_set_generation(FilterXVariable *v, FilterXGenCounter generation)
 {
   v->generation = generation;
 }

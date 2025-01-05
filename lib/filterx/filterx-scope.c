@@ -21,6 +21,7 @@
  *
  */
 #include "filterx/filterx-scope.h"
+#include "filterx/object-message-value.h"
 #include "scratch-buffers.h"
 
 
@@ -62,42 +63,28 @@ _lookup_variable(FilterXScope *self, FilterXVariableHandle handle, FilterXVariab
 static gboolean
 _validate_variable(FilterXScope *self, FilterXVariable *variable)
 {
+  if (filterx_variable_is_declared(variable))
+    return TRUE;
+
   if (filterx_variable_is_floating(variable) &&
-      !filterx_variable_is_declared(variable) &&
       !filterx_variable_is_same_generation(variable, self->generation))
     return FALSE;
+
+  if (filterx_variable_is_message_tied(variable) &&
+      !filterx_variable_is_same_generation(variable, self->msg->generation))
+    return FALSE;
   return TRUE;
-}
-
-FilterXVariable *
-filterx_scope_lookup_variable(FilterXScope *self, FilterXVariableHandle handle)
-{
-  FilterXVariable *v;
-
-  if (_lookup_variable(self, handle, &v) && _validate_variable(self, v))
-    return v;
-  return NULL;
 }
 
 static FilterXVariable *
 _register_variable(FilterXScope *self,
                    FilterXVariableType variable_type,
-                   FilterXVariableHandle handle,
-                   FilterXObject *initial_value)
+                   FilterXVariableHandle handle)
 {
   FilterXVariable *v_slot;
 
   if (_lookup_variable(self, handle, &v_slot))
     {
-      /* already present */
-      if (!filterx_variable_is_same_generation(v_slot, self->generation))
-        {
-          /* existing value is from a previous generation, override it as if
-           * it was a new value */
-
-          filterx_variable_set_generation(v_slot, self->generation);
-          filterx_variable_set_value(v_slot, initial_value, FALSE);
-        }
       return v_slot;
     }
   /* turn v_slot into an index */
@@ -105,26 +92,68 @@ _register_variable(FilterXScope *self,
   g_assert(v_index <= self->variables->len);
   g_assert(&g_array_index(self->variables, FilterXVariable, v_index) == v_slot);
 
-
+  /* we register an unset variable here first */
   FilterXVariable v;
-  filterx_variable_init_instance(&v, variable_type, handle, initial_value, self->generation);
+  filterx_variable_init_instance(&v, variable_type, handle);
   g_array_insert_val(self->variables, v_index, v);
 
   return &g_array_index(self->variables, FilterXVariable, v_index);
 }
 
 FilterXVariable *
+filterx_scope_lookup_variable(FilterXScope *self, FilterXVariableHandle handle)
+{
+  FilterXVariable *v;
+
+  if (_lookup_variable(self, handle, &v) &&
+      _validate_variable(self, v))
+    return v;
+  return NULL;
+}
+
+static FilterXObject *
+_pull_variable_from_message(FilterXScope *self, NVHandle handle)
+{
+  gssize value_len;
+  LogMessageValueType t;
+
+  const gchar *value = log_msg_get_value_if_set_with_type(self->msg, handle, &value_len, &t);
+  if (!value)
+      return NULL;
+
+  if (log_msg_is_handle_macro(handle))
+    {
+      FilterXObject *res = filterx_message_value_new(value, value_len, t);
+      filterx_object_make_readonly(res);
+      return res;
+    }
+  else
+    return filterx_message_value_new_borrowed(value, value_len, t);
+}
+
+
+FilterXVariable *
 filterx_scope_register_variable(FilterXScope *self,
                                 FilterXVariableType variable_type,
-                                FilterXVariableHandle handle,
-                                FilterXObject *initial_value)
+                                FilterXVariableHandle handle)
 {
-  FilterXVariable *v = _register_variable(self, variable_type, handle, initial_value);
+  FilterXVariable *v = _register_variable(self, variable_type, handle);
 
   /* the scope needs to be synced with the message if it holds a
    * message-tied variable (e.g.  $MSG) */
-  if (filterx_variable_handle_is_message_tied(handle))
-    self->syncable = TRUE;
+  if (variable_type == FX_VAR_MESSAGE_TIED)
+    {
+      FilterXObject *value = _pull_variable_from_message(self, filterx_variable_handle_to_nv_handle(handle));
+      self->syncable = TRUE;
+
+      /* NOTE: value may be NULL on an error, in that case the variable becomes an unset one */
+      filterx_variable_set_value(v, value, FALSE, self->msg->generation);
+      filterx_object_unref(value);
+    }
+  else
+    {
+      filterx_variable_set_value(v, NULL, FALSE, self->generation);
+    }
   return v;
 }
 
@@ -155,7 +184,7 @@ filterx_scope_foreach_variable(FilterXScope *self, FilterXScopeForeachFunc func,
 void
 filterx_scope_sync(FilterXScope *self, LogMessage *msg)
 {
-
+  filterx_scope_set_message(self, msg);
   if (!self->dirty)
     {
       msg_trace("Filterx sync: not syncing as scope is not dirty",
@@ -171,6 +200,8 @@ filterx_scope_sync(FilterXScope *self, LogMessage *msg)
     }
 
   GString *buffer = scratch_buffers_alloc();
+
+  gint msg_generation = msg->generation;
 
   for (gint i = 0; i < self->variables->len; i++)
     {
@@ -199,16 +230,19 @@ filterx_scope_sync(FilterXScope *self, LogMessage *msg)
         }
       else if (v->value == NULL)
         {
+          g_assert(v->generation == msg_generation);
           msg_trace("Filterx sync: whiteout variable, unsetting in message",
                     evt_tag_str("variable", log_msg_get_value_name(filterx_variable_get_nv_handle(v), NULL)));
           /* we need to unset */
           log_msg_unset_value(msg, filterx_variable_get_nv_handle(v));
           filterx_variable_unassign(v);
+          v->generation++;
         }
       else if (filterx_variable_is_assigned(v) || filterx_object_is_modified_in_place(v->value))
         {
           LogMessageValueType t;
 
+          g_assert(v->generation == msg_generation);
           msg_trace("Filterx sync: changed variable in scope, overwriting in message",
                     evt_tag_str("variable", log_msg_get_value_name(filterx_variable_get_nv_handle(v), NULL)));
 
@@ -218,13 +252,17 @@ filterx_scope_sync(FilterXScope *self, LogMessage *msg)
           log_msg_set_value_with_type(msg, filterx_variable_get_nv_handle(v), buffer->str, buffer->len, t);
           filterx_object_set_modified_in_place(v->value, FALSE);
           filterx_variable_unassign(v);
+          v->generation++;
         }
       else
         {
           msg_trace("Filterx sync: variable in scope and message in sync, not doing anything",
                     evt_tag_str("variable", log_msg_get_value_name(filterx_variable_get_nv_handle(v), NULL)));
+          v->generation++;
         }
     }
+  /* FIXME: hack ! */
+  msg->generation = msg_generation + 1;
   self->dirty = FALSE;
 }
 
@@ -298,7 +336,6 @@ filterx_scope_make_writable(FilterXScope **pself)
       *pself = new;
     }
   (*pself)->generation++;
-  g_assert((*pself)->generation < FILTERX_SCOPE_MAX_GENERATION);
   return *pself;
 }
 

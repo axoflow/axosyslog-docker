@@ -114,18 +114,17 @@ _load_from_dict(FilterXObject *key, FilterXObject *value, gpointer user_data)
   FilterXVariableType variable_type = (key_str[0] == '$') ? FX_VAR_MESSAGE_TIED : FX_VAR_DECLARED_FLOATING;
   FilterXVariableHandle handle = filterx_map_varname_to_handle(key_str, variable_type);
 
-  FilterXVariable *variable = NULL;
-  variable = filterx_scope_register_variable(scope, variable_type, handle, NULL);
-
-  FilterXObject *cloned_value = filterx_object_clone(value);
-  filterx_variable_set_value(variable, cloned_value, TRUE);
-  filterx_object_unref(cloned_value);
-
+  FilterXVariable *variable = filterx_scope_register_variable(scope, variable_type, handle);
   if (!variable)
     {
       filterx_eval_push_error("Failed to register variable", NULL, key);
       return FALSE;
     }
+
+  FilterXObject *cloned_value = filterx_object_clone(value);
+  filterx_scope_set_variable(scope, variable, cloned_value, TRUE);
+  filterx_object_unref(cloned_value);
+
 
   if (debug_flag)
     {
