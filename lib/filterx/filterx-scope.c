@@ -27,24 +27,85 @@
 
 volatile gint filterx_scope_variables_max = 16;
 
+static inline FilterXVariable *
+_get_variable_array(FilterXScope *self)
+{
+  if (self->coupled_variables)
+    return self->variables.coupled;
+  else
+    return self->variables.separate;
+}
+
+static FilterXVariable *
+_insert_into_large_enough_array(FilterXScope *self, FilterXVariable *elems, gint index)
+{
+  g_assert(self->variables.size >= self->variables.len + 1);
+
+  gint n = self->variables.len - index;
+  if (n)
+    memmove(&elems[index + 1], &elems[index], n * sizeof(elems[0]));
+  self->variables.len++;
+  elems[index] = (FilterXVariable){0};
+  return &elems[index];
+}
+
+static void
+_separate_variables(FilterXScope *self)
+{
+  /* realloc */
+  FilterXVariable *separate_array = g_new(FilterXVariable, self->variables.size * 2);
+
+  memcpy(separate_array, self->variables.coupled, self->variables.len * sizeof(separate_array[0]));
+  self->coupled_variables = FALSE;
+  self->variables.size *= 2;
+  self->variables.separate = separate_array;
+}
+
+static void
+_grow_separate_array(FilterXScope *self)
+{
+  self->variables.size *= 2;
+  self->variables.separate = g_realloc(self->variables.separate, self->variables.size * sizeof(self->variables.separate[0]));
+}
+
+static FilterXVariable *
+_insert_variable(FilterXScope *self, gint index)
+{
+  if (self->coupled_variables)
+    {
+      if (self->variables.len + 1 < self->variables.size)
+        return _insert_into_large_enough_array(self, self->variables.coupled, index);
+
+      _separate_variables(self);
+    }
+
+  if (self->variables.len + 1 >= self->variables.size)
+    _grow_separate_array(self);
+
+  return _insert_into_large_enough_array(self, self->variables.separate, index);
+}
+
 static gboolean
-_lookup_variable(FilterXScope *self, FilterXVariableHandle handle, FilterXVariable **v_slot)
+_lookup_variable(FilterXScope *self, FilterXVariableHandle handle, FilterXVariable **v_slot, gint *v_index)
 {
   gint l, h, m;
+  FilterXVariable *variables = _get_variable_array(self);
+  gint variables_len = self->variables.len;
 
   /* open-coded binary search */
   l = 0;
-  h = self->variables->len - 1;
+  h = variables_len - 1;
   while (l <= h)
     {
       m = (l + h) >> 1;
 
-      FilterXVariable *m_elem = &g_array_index(self->variables, FilterXVariable, m);
-
+      FilterXVariable *m_elem = &variables[m];
       FilterXVariableHandle mv = m_elem->handle;
+
       if (mv == handle)
         {
           *v_slot = m_elem;
+          *v_index = m;
           return TRUE;
         }
       else if (mv > handle)
@@ -56,7 +117,8 @@ _lookup_variable(FilterXScope *self, FilterXVariableHandle handle, FilterXVariab
           l = m + 1;
         }
     }
-  *v_slot = &g_array_index(self->variables, FilterXVariable, l);
+  *v_slot = &variables[l];
+  *v_index = l;
   return FALSE;
 }
 
@@ -76,28 +138,21 @@ _validate_variable(FilterXScope *self, FilterXVariable *variable)
   return TRUE;
 }
 
+
 static FilterXVariable *
 _register_variable(FilterXScope *self,
                    FilterXVariableType variable_type,
                    FilterXVariableHandle handle)
 {
-  FilterXVariable *v_slot;
+  FilterXVariable *v;
+  gint v_index;
 
-  if (_lookup_variable(self, handle, &v_slot))
-    {
-      return v_slot;
-    }
-  /* turn v_slot into an index */
-  gsize v_index = ((guint8 *) v_slot - (guint8 *) self->variables->data) / sizeof(FilterXVariable);
-  g_assert(v_index <= self->variables->len);
-  g_assert(&g_array_index(self->variables, FilterXVariable, v_index) == v_slot);
+  if (_lookup_variable(self, handle, &v, &v_index))
+    return v;
 
-  /* we register an unset variable here first */
-  FilterXVariable v;
-  filterx_variable_init_instance(&v, variable_type, handle);
-  g_array_insert_val(self->variables, v_index, v);
-
-  return &g_array_index(self->variables, FilterXVariable, v_index);
+  v = _insert_variable(self, v_index);
+  filterx_variable_init_instance(v, variable_type, handle);
+  return v;
 }
 
 static FilterXVariable *
@@ -118,14 +173,15 @@ FilterXVariable *
 filterx_scope_lookup_variable(FilterXScope *self, FilterXVariableHandle handle)
 {
   FilterXVariable *v;
+  gint v_index;
 
-  if (_lookup_variable(self, handle, &v) &&
+  if (_lookup_variable(self, handle, &v, &v_index) &&
       _validate_variable(self, v))
     return v;
 
   for (FilterXScope *scope = self->parent_scope; scope; scope = scope->parent_scope)
     {
-      if (_lookup_variable(scope, handle, &v))
+      if (_lookup_variable(scope, handle, &v, &v_index))
         {
           /* NOTE: we validate against @self */
           if (_validate_variable(self, v))
@@ -189,9 +245,11 @@ filterx_scope_register_variable(FilterXScope *self,
 gboolean
 filterx_scope_foreach_variable(FilterXScope *self, FilterXScopeForeachFunc func, gpointer user_data)
 {
-  for (gsize i = 0; i < self->variables->len; i++)
+  FilterXVariable *variables = _get_variable_array(self);
+
+  for (gint i = 0; i < self->variables.len; i++)
     {
-      FilterXVariable *variable = &g_array_index(self->variables, FilterXVariable, i);
+      FilterXVariable *variable = &variables[i];
 
       if (!variable->value)
         continue;
@@ -231,10 +289,11 @@ filterx_scope_sync(FilterXScope *self, LogMessage *msg)
   GString *buffer = scratch_buffers_alloc();
 
   gint msg_generation = msg->generation;
+  FilterXVariable *variables = _get_variable_array(self);
 
-  for (gint i = 0; i < self->variables->len; i++)
+  for (gint i = 0; i < self->variables.len; i++)
     {
-      FilterXVariable *v = &g_array_index(self->variables, FilterXVariable, i);
+      FilterXVariable *v = &variables[i];
 
       /* we don't need to sync the value if:
        *
@@ -298,12 +357,14 @@ filterx_scope_sync(FilterXScope *self, LogMessage *msg)
 FilterXScope *
 filterx_scope_new(FilterXScope *parent_scope)
 {
-  FilterXScope *self = g_new0(FilterXScope, 1);
+  gsize alloc_size = sizeof(FilterXScope) + sizeof(FilterXVariable) * filterx_scope_variables_max;
+  FilterXScope *self = g_malloc(alloc_size);
 
+  memset(self, 0, sizeof(FilterXScope));
   g_atomic_counter_set(&self->ref_cnt, 1);
-  self->variables = g_array_sized_new(FALSE, TRUE, sizeof(FilterXVariable), filterx_scope_variables_max);
-  g_array_set_clear_func(self->variables, (GDestroyNotify) filterx_variable_clear);
   self->parent_scope = filterx_scope_ref(parent_scope);
+  self->variables.size = filterx_scope_variables_max;
+  self->coupled_variables = TRUE;
   return self;
 }
 
@@ -314,7 +375,7 @@ filterx_scope_clone(FilterXScope *other)
 
   /* retain the generation counter */
   self->generation = other->generation;
-  if (other->variables->len > 0)
+  if (other->variables.len > 0)
     self->dirty = other->dirty;
   self->syncable = other->syncable;
   self->msg = log_msg_ref(other->msg);
@@ -356,12 +417,20 @@ _free(FilterXScope *self)
 {
   /* NOTE: update the number of inlined variable allocations */
   gint variables_max = filterx_scope_variables_max;
-  if (variables_max < self->variables->len)
-    filterx_scope_variables_max = self->variables->len;
+  if (variables_max < self->variables.len)
+    filterx_scope_variables_max = self->variables.len;
 
   if (self->msg)
     log_msg_unref(self->msg);
-  g_array_free(self->variables, TRUE);
+
+  FilterXVariable *variables = _get_variable_array(self);
+  for (gint i = 0; i < self->variables.len; i++)
+    {
+      FilterXVariable *v = &variables[i];
+      filterx_variable_clear(v);
+    }
+  if (!self->coupled_variables)
+    g_free(self->variables.separate);
   filterx_scope_unref(self->parent_scope);
   g_free(self);
 }

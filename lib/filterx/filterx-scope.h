@@ -43,11 +43,22 @@ typedef struct _FilterXScope FilterXScope;
 struct _FilterXScope
 {
   GAtomicCounter ref_cnt;
-  guint16 write_protected:1, dirty:1, syncable:1;
+  guint16 write_protected:1, dirty:1, syncable:1, coupled_variables:1;
   FilterXGenCounter generation;
   LogMessage *msg;
   FilterXScope *parent_scope;
-  GArray *variables;
+  struct
+  {
+    /* number of elems */
+    gint len;
+    /* allocated elems */
+    gint size;
+    union
+    {
+      FilterXVariable *separate;
+      FilterXVariable coupled[0];
+    };
+  } variables;
 };
 
 typedef gboolean (*FilterXScopeForeachFunc)(FilterXVariable *variable, gpointer user_data);

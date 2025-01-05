@@ -51,6 +51,4 @@ filterx_variable_init_instance(FilterXVariable *v,
 {
   v->variable_type = variable_type;
   v->handle = handle;
-  v->assigned = FALSE;
-  v->value = NULL;
 }
