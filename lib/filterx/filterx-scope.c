@@ -59,18 +59,6 @@ _lookup_variable(FilterXScope *self, FilterXVariableHandle handle, FilterXVariab
   return FALSE;
 }
 
-void
-filterx_scope_set_dirty(FilterXScope *self)
-{
-  self->dirty = TRUE;
-}
-
-gboolean
-filterx_scope_is_dirty(FilterXScope *self)
-{
-  return self->dirty;
-}
-
 static gboolean
 _validate_variable(FilterXScope *self, FilterXVariable *variable)
 {

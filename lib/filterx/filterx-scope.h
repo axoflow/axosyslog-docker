@@ -50,8 +50,6 @@ struct _FilterXScope
 
 typedef gboolean (*FilterXScopeForeachFunc)(FilterXVariable *variable, gpointer user_data);
 
-void filterx_scope_set_dirty(FilterXScope *self);
-gboolean filterx_scope_is_dirty(FilterXScope *self);
 void filterx_scope_sync(FilterXScope *self, LogMessage *msg);
 
 FilterXVariable *filterx_scope_lookup_variable(FilterXScope *self, FilterXVariableHandle handle);
@@ -68,6 +66,18 @@ FilterXScope *filterx_scope_make_writable(FilterXScope **pself);
 FilterXScope *filterx_scope_new(void);
 FilterXScope *filterx_scope_ref(FilterXScope *self);
 void filterx_scope_unref(FilterXScope *self);
+
+static inline void
+filterx_scope_set_dirty(FilterXScope *self)
+{
+  self->dirty = TRUE;
+}
+
+static inline gboolean
+filterx_scope_is_dirty(FilterXScope *self)
+{
+  return self->dirty;
+}
 
 static inline void
 filterx_scope_set_message(FilterXScope *self, LogMessage *msg)
