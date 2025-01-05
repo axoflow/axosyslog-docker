@@ -79,7 +79,7 @@ typedef struct _FilterXVariable
 
 void filterx_variable_init_instance(FilterXVariable *v, FilterXVariableHandle handle,
                                     FilterXObject *initial_value, guint32 generation);
-void filterx_variable_free(FilterXVariable *v);
+void filterx_variable_clear(FilterXVariable *v);
 
 static inline gboolean
 filterx_variable_is_floating(FilterXVariable *v)

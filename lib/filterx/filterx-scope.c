@@ -284,7 +284,7 @@ filterx_scope_new(void)
 
   g_atomic_counter_set(&self->ref_cnt, 1);
   self->variables = g_array_sized_new(FALSE, TRUE, sizeof(FilterXVariable), 16);
-  g_array_set_clear_func(self->variables, (GDestroyNotify) filterx_variable_free);
+  g_array_set_clear_func(self->variables, (GDestroyNotify) filterx_variable_clear);
   return self;
 }
 
@@ -391,7 +391,7 @@ filterx_scope_invalidate_log_msg_cache(FilterXScope *self)
       if (!filterx_variable_is_floating(v) && self->syncable)
         {
           /* skip this variable */
-          filterx_variable_free(v);
+          filterx_variable_clear(v);
         }
       else
         {

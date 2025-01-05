@@ -39,7 +39,7 @@ filterx_map_varname_to_handle(const gchar *name, FilterXVariableType type)
 }
 
 void
-filterx_variable_free(FilterXVariable *v)
+filterx_variable_clear(FilterXVariable *v)
 {
   filterx_object_unref(v->value);
 }
