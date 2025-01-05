@@ -154,6 +154,7 @@ filterx_eval_init_context(FilterXEvalContext *context, FilterXEvalContext *previ
   else
     scope = filterx_scope_new();
   filterx_scope_make_writable(&scope);
+  filterx_scope_set_message(scope, msg);
 
   memset(context, 0, sizeof(*context));
   context->msg = msg;

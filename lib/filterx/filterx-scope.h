@@ -43,6 +43,7 @@ typedef struct _FilterXScope FilterXScope;
 struct _FilterXScope
 {
   GAtomicCounter ref_cnt;
+  LogMessage *msg;
   GArray *variables;
   guint32 generation:20, write_protected, dirty, syncable;
 };
@@ -67,5 +68,13 @@ FilterXScope *filterx_scope_make_writable(FilterXScope **pself);
 FilterXScope *filterx_scope_new(void);
 FilterXScope *filterx_scope_ref(FilterXScope *self);
 void filterx_scope_unref(FilterXScope *self);
+
+static inline void
+filterx_scope_set_message(FilterXScope *self, LogMessage *msg)
+{
+  if (self->msg)
+    log_msg_unref(self->msg);
+  self->msg = log_msg_ref(msg);
+}
 
 #endif

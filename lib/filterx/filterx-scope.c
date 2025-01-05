@@ -279,6 +279,7 @@ filterx_scope_clone(FilterXScope *other)
   if (other->variables->len > 0)
     self->dirty = other->dirty;
   self->syncable = other->syncable;
+  self->msg = log_msg_ref(other->msg);
 
   msg_trace("Filterx clone finished",
             evt_tag_printf("scope", "%p", self),
@@ -321,6 +322,8 @@ _free(FilterXScope *self)
   if (variables_max < self->variables->len)
     filterx_scope_variables_max = self->variables->len;
 
+  if (self->msg)
+    log_msg_unref(self->msg);
   g_array_free(self->variables, TRUE);
   g_free(self);
 }
