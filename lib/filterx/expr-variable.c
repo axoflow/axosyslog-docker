@@ -113,6 +113,12 @@ _assign(FilterXExpr *s, FilterXObject *new_value)
   FilterXScope *scope = filterx_eval_get_scope();
   FilterXVariable *variable = filterx_scope_lookup_variable(scope, self->handle);
 
+  if (self->handle_is_macro)
+    {
+      filterx_eval_push_error("Macro based variable cannot be changed", &self->super, self->variable_name);
+      return FALSE;
+    }
+
   if (!variable)
     {
       /* NOTE: we pass NULL as initial_value to make sure the new variable
@@ -150,6 +156,13 @@ static gboolean
 _unset(FilterXExpr *s)
 {
   FilterXVariableExpr *self = (FilterXVariableExpr *) s;
+
+  if (self->handle_is_macro)
+    {
+      filterx_eval_push_error("Macro based variable cannot be changed", &self->super, self->variable_name);
+      return FALSE;
+    }
+
   FilterXEvalContext *context = filterx_eval_get_context();
 
   FilterXVariable *variable = filterx_scope_lookup_variable(context->scope, self->handle);
