@@ -28,12 +28,12 @@
 FilterXVariableHandle
 filterx_map_varname_to_handle(const gchar *name, FilterXVariableType type)
 {
-  if (type == FX_VAR_MESSAGE)
+  if (type == FX_VAR_MESSAGE_TIED)
     name++;
 
   NVHandle nv_handle = log_msg_get_value_handle(name);
 
-  if (type == FX_VAR_MESSAGE)
+  if (type == FX_VAR_MESSAGE_TIED)
     return (FilterXVariableHandle) nv_handle;
   return (FilterXVariableHandle) nv_handle | FILTERX_HANDLE_FLOATING_BIT;
 }
@@ -45,12 +45,15 @@ filterx_variable_clear(FilterXVariable *v)
 }
 
 void
-filterx_variable_init_instance(FilterXVariable *v, FilterXVariableHandle handle,
-                               FilterXObject *initial_value, guint32 generation)
+filterx_variable_init_instance(FilterXVariable *v,
+                               FilterXVariableType variable_type,
+                               FilterXVariableHandle handle,
+                               FilterXObject *initial_value,
+                               guint32 generation)
 {
   v->handle = handle;
+  v->variable_type = variable_type;
   v->assigned = FALSE;
-  v->declared = FALSE;
   v->generation = generation;
   v->value = filterx_object_ref(initial_value);
 }

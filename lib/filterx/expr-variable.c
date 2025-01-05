@@ -34,9 +34,10 @@
 typedef struct _FilterXVariableExpr
 {
   FilterXExpr super;
-  FilterXObject *variable_name;
+  FilterXVariableType variable_type;
   NVHandle handle;
-  guint32 declared:1, handle_is_macro:1;
+  FilterXObject *variable_name;
+  guint32 handle_is_macro:1;
 } FilterXVariableExpr;
 
 static FilterXObject *
@@ -61,7 +62,7 @@ _pull_variable_from_message(FilterXVariableExpr *self, FilterXEvalContext *conte
 static void
 _whiteout_variable(FilterXVariableExpr *self, FilterXEvalContext *context)
 {
-  filterx_scope_register_variable(context->scope, self->handle, NULL);
+  filterx_scope_register_variable(context->scope, FX_VAR_MESSAGE_TIED, self->handle, NULL);
 }
 
 static FilterXObject *
@@ -87,7 +88,7 @@ _eval(FilterXExpr *s)
       FilterXObject *msg_ref = _pull_variable_from_message(self, context, context->msg);
       if(!msg_ref)
         return NULL;
-      filterx_scope_register_variable(context->scope, self->handle, msg_ref);
+      filterx_scope_register_variable(context->scope, FX_VAR_MESSAGE_TIED, self->handle, msg_ref);
       return msg_ref;
     }
 
@@ -124,10 +125,7 @@ _assign(FilterXExpr *s, FilterXObject *new_value)
       /* NOTE: we pass NULL as initial_value to make sure the new variable
        * is considered changed due to the assignment */
 
-      if (self->declared)
-        variable = filterx_scope_register_declared_variable(scope, self->handle, NULL);
-      else
-        variable = filterx_scope_register_variable(scope, self->handle, NULL);
+      variable = filterx_scope_register_variable(scope, self->variable_type, self->handle, NULL);
     }
 
   /* this only clones mutable objects */
@@ -217,7 +215,7 @@ _deinit(FilterXExpr *s, GlobalConfig *cfg)
 }
 
 static FilterXExpr *
-filterx_variable_expr_new(FilterXString *name, FilterXVariableType type)
+filterx_variable_expr_new(FilterXString *name, FilterXVariableType variable_type)
 {
   FilterXVariableExpr *self = g_new0(FilterXVariableExpr, 1);
 
@@ -231,9 +229,10 @@ filterx_variable_expr_new(FilterXString *name, FilterXVariableType type)
   self->super.is_set = _isset;
   self->super.unset = _unset;
 
+  self->variable_type = variable_type;
   self->variable_name = (FilterXObject *) name;
-  self->handle = filterx_map_varname_to_handle(filterx_string_get_value_ref(self->variable_name, NULL), type);
-  if (type == FX_VAR_MESSAGE)
+  self->handle = filterx_map_varname_to_handle(filterx_string_get_value_ref(self->variable_name, NULL), variable_type);
+  if (variable_type == FX_VAR_MESSAGE_TIED)
     self->handle_is_macro = log_msg_is_handle_macro(filterx_variable_handle_to_nv_handle(self->handle));
 
   return &self->super;
@@ -242,7 +241,7 @@ filterx_variable_expr_new(FilterXString *name, FilterXVariableType type)
 FilterXExpr *
 filterx_msg_variable_expr_new(FilterXString *name)
 {
-  return filterx_variable_expr_new(name, FX_VAR_MESSAGE);
+  return filterx_variable_expr_new(name, FX_VAR_MESSAGE_TIED);
 }
 
 FilterXExpr *
@@ -257,5 +256,7 @@ filterx_variable_expr_declare(FilterXExpr *s)
   FilterXVariableExpr *self = (FilterXVariableExpr *) s;
 
   g_assert(s->eval == _eval);
-  self->declared = TRUE;
+  /* we can only declare a floating variable */
+  g_assert(self->variable_type == FX_VAR_FLOATING);
+  self->variable_type = FX_VAR_DECLARED_FLOATING;
 }

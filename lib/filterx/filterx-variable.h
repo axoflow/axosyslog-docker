@@ -31,9 +31,9 @@
 
 typedef enum
 {
-  FX_VAR_MESSAGE,
+  FX_VAR_MESSAGE_TIED,
   FX_VAR_FLOATING,
-  FX_VAR_DECLARED,
+  FX_VAR_DECLARED_FLOATING,
 } FilterXVariableType;
 
 #define FILTERX_SCOPE_MAX_GENERATION ((1UL << 20) - 1)
@@ -72,13 +72,16 @@ typedef struct _FilterXVariable
    * declared -- this variable is declared (e.g. retained for the entire input pipeline)
    */
   guint32 assigned:1,
-          declared:1,
+          variable_type:2,
           generation:20;
   FilterXObject *value;
 } FilterXVariable;
 
-void filterx_variable_init_instance(FilterXVariable *v, FilterXVariableHandle handle,
-                                    FilterXObject *initial_value, guint32 generation);
+void filterx_variable_init_instance(FilterXVariable *v,
+                                    FilterXVariableType variable_type,
+                                    FilterXVariableHandle handle,
+                                    FilterXObject *initial_value,
+                                    guint32 generation);
 void filterx_variable_clear(FilterXVariable *v);
 
 static inline gboolean
@@ -134,7 +137,7 @@ filterx_variable_is_set(FilterXVariable *v)
 static inline gboolean
 filterx_variable_is_declared(FilterXVariable *v)
 {
-  return v->declared;
+  return v->variable_type == FX_VAR_DECLARED_FLOATING;
 }
 
 static inline gboolean
@@ -159,12 +162,6 @@ static inline void
 filterx_variable_unassign(FilterXVariable *v)
 {
   v->assigned = FALSE;
-}
-
-static inline void
-filterx_variable_set_declared(FilterXVariable *v, gboolean declared)
-{
-  v->declared = declared;
 }
 
 #endif

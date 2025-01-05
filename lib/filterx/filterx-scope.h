@@ -52,11 +52,9 @@ void filterx_scope_sync(FilterXScope *self, LogMessage *msg);
 
 FilterXVariable *filterx_scope_lookup_variable(FilterXScope *self, FilterXVariableHandle handle);
 FilterXVariable *filterx_scope_register_variable(FilterXScope *self,
+                                                 FilterXVariableType variable_type,
                                                  FilterXVariableHandle handle,
                                                  FilterXObject *initial_value);
-FilterXVariable *filterx_scope_register_declared_variable(FilterXScope *self,
-                                                          FilterXVariableHandle handle,
-                                                          FilterXObject *initial_value);
 gboolean filterx_scope_foreach_variable(FilterXScope *self, FilterXScopeForeachFunc func, gpointer user_data);
 void filterx_scope_invalidate_log_msg_cache(FilterXScope *self);
 

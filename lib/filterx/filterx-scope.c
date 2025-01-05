@@ -115,6 +115,7 @@ filterx_scope_lookup_variable(FilterXScope *self, FilterXVariableHandle handle)
 
 static FilterXVariable *
 _register_variable(FilterXScope *self,
+                   FilterXVariableType variable_type,
                    FilterXVariableHandle handle,
                    FilterXObject *initial_value)
 {
@@ -142,7 +143,7 @@ _register_variable(FilterXScope *self,
 
 
   FilterXVariable v;
-  filterx_variable_init_instance(&v, handle, initial_value, self->generation);
+  filterx_variable_init_instance(&v, variable_type, handle, initial_value, self->generation);
   g_array_insert_val(self->variables, v_index, v);
 
   return &g_array_index(self->variables, FilterXVariable, v_index);
@@ -150,30 +151,16 @@ _register_variable(FilterXScope *self,
 
 FilterXVariable *
 filterx_scope_register_variable(FilterXScope *self,
+                                FilterXVariableType variable_type,
                                 FilterXVariableHandle handle,
                                 FilterXObject *initial_value)
 {
-  FilterXVariable *v = _register_variable(self, handle, initial_value);
-  filterx_variable_set_declared(v, FALSE);
+  FilterXVariable *v = _register_variable(self, variable_type, handle, initial_value);
 
   /* the scope needs to be synced with the message if it holds a
    * message-tied variable (e.g.  $MSG) */
   if (filterx_variable_handle_is_message_tied(handle))
     self->syncable = TRUE;
-  return v;
-}
-
-FilterXVariable *
-filterx_scope_register_declared_variable(FilterXScope *self,
-                                         FilterXVariableHandle handle,
-                                         FilterXObject *initial_value)
-
-{
-  g_assert(filterx_variable_handle_is_floating(handle));
-
-  FilterXVariable *v = _register_variable(self, handle, initial_value);
-  filterx_variable_set_declared(v, TRUE);
-
   return v;
 }
 

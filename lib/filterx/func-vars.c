@@ -111,14 +111,11 @@ _load_from_dict(FilterXObject *key, FilterXObject *value, gpointer user_data)
       return FALSE;
     }
 
-  gboolean is_floating = key_str[0] != '$';
-  FilterXVariableHandle handle = filterx_map_varname_to_handle(key_str, is_floating ? FX_VAR_FLOATING : FX_VAR_MESSAGE);
+  FilterXVariableType variable_type = (key_str[0] == '$') ? FX_VAR_MESSAGE_TIED : FX_VAR_DECLARED_FLOATING;
+  FilterXVariableHandle handle = filterx_map_varname_to_handle(key_str, variable_type);
 
   FilterXVariable *variable = NULL;
-  if (is_floating)
-    variable = filterx_scope_register_declared_variable(scope, handle, NULL);
-  else
-    variable = filterx_scope_register_variable(scope, handle, NULL);
+  variable = filterx_scope_register_variable(scope, variable_type, handle, NULL);
 
   FilterXObject *cloned_value = filterx_object_clone(value);
   filterx_variable_set_value(variable, cloned_value);
@@ -143,7 +140,7 @@ _load_from_dict(FilterXObject *key, FilterXObject *value, gpointer user_data)
                 evt_tag_str("key", key_str),
                 evt_tag_str("value", repr->str),
                 evt_tag_str("type", value->type->name),
-                evt_tag_str("variable_type", is_floating ? "declared" : "message"));
+                evt_tag_int("variable_type", variable_type));
     }
 
   return TRUE;
