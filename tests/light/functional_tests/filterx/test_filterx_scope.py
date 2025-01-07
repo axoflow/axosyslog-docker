@@ -30,10 +30,14 @@ def render_filterx_exprs(expressions):
     return '\n'.join(f"filterx {{ {expr} }};" for expr in expressions)
 
 
-def create_config(config, init_exprs, true_exprs=(), false_exprs=(), final_exprs=(), msg="foobar"):
-    file_true = config.create_file_destination(file_name="dest-true.log", template="'$MSG\n'")
-    file_false = config.create_file_destination(file_name="dest-false.log", template="'$MSG\n'")
-    file_final = config.create_file_destination(file_name="dest-final.log", template="'$MSG\n'")
+def render_log_exprs(expressions):
+    return '\n'.join(expressions)
+
+
+def create_config(config, init_exprs, init_log_exprs=(), true_exprs=(), false_exprs=(), final_log_exprs=(), final_exprs=(), msg="foobar", template="'$MSG\n'"):
+    file_true = config.create_file_destination(file_name="dest-true.log", template=template)
+    file_false = config.create_file_destination(file_name="dest-false.log", template=template)
+    file_final = config.create_file_destination(file_name="dest-final.log", template=template)
 
     preamble = f"""
 @version: {config.get_version()}
@@ -76,6 +80,7 @@ destination dest_final {{
 log {{
     source(genmsg);
     {render_filterx_exprs(init_exprs)};
+    {render_log_exprs(init_log_exprs)}
     if {{
         {render_filterx_exprs(true_exprs)}
         destination(dest_true);
@@ -83,6 +88,7 @@ log {{
         {render_filterx_exprs(false_exprs)}
         destination(dest_false);
     }};
+    {render_log_exprs(final_log_exprs)}
     {render_filterx_exprs(final_exprs)}
     destination(dest_final);
 }};
@@ -180,6 +186,40 @@ def test_message_tied_variables_do_not_propagate_to_parallel_branches(config, sy
     assert file_false.get_stats()["processed"] == 1
     assert "processed" not in file_true.get_stats()
     assert file_false.read_log() == "kecske\n"
+
+
+def test_message_tied_variables_are_not_considered_changed_just_by_unmarshaling(config, syslog_ng):
+    (file_true, file_false, file_final) = create_config(
+        config, init_exprs=[
+            """
+                # pull up the value from the message into a filterx variable
+                ${values.json};
+                # cause an unmarshal into JSON
+                ${values.json}.emb_key1;
+                # $foo is set to the unmarshalled version of ${values.json}
+                $foo = ${values.json};
+            """,
+        ], init_log_exprs=[
+            # trigger a sync
+            """
+                rewrite {
+                };
+            """,
+        ],
+        # ${values.json} should retain to have spaces in them, since it was not actually changed, just unmarshalled
+        # ${foo} is reformatted from the unmarshalled value
+        #
+        # NOTE the extra spaces in the assertion below on the $foo part
+        template="'${values.json} -- $foo\n'",
+    )
+
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    (values_json, foo) = file_true.read_log().strip().split(' -- ')
+    assert values_json == """{"emb_key1": "emb_key1 value", "emb_key2": "emb_key2 value"}"""
+    assert foo == """{"emb_key1":"emb_key1 value","emb_key2":"emb_key2 value"}"""
 
 
 def test_floating_variables_are_dropped_at_the_end_of_the_scope(config, syslog_ng):

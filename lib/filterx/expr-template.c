@@ -46,7 +46,7 @@ _eval(FilterXExpr *s)
   /* FIXME: we could go directly to filterx_string_new() here to avoid a round trip in FilterXMessageValue */
   /* FIXME/2: let's make this handle literal and trivial templates */
 
-  log_template_format_value_and_type_with_context(self->template, context->msgs, context->num_msg,
+  log_template_format_value_and_type_with_context(self->template, &context->msg, 1,
                                                   &context->template_eval_options, value, &t);
 
   /* NOTE: we borrow value->str here which is stored in a scratch buffer

@@ -42,7 +42,7 @@ _add_to_dict(FilterXVariable *variable, gpointer user_data)
   gssize name_len;
   const gchar *name_str = filterx_variable_get_name(variable, &name_len);
 
-  if (!filterx_variable_is_floating(variable))
+  if (filterx_variable_is_message_tied(variable))
     {
       g_string_assign(name_buf, "$");
       g_string_append_len(name_buf, name_str, name_len);
@@ -111,17 +111,14 @@ _load_from_dict(FilterXObject *key, FilterXObject *value, gpointer user_data)
       return FALSE;
     }
 
-  gboolean is_floating = key_str[0] != '$';
-  FilterXVariableHandle handle = filterx_map_varname_to_handle(key_str, is_floating ? FX_VAR_FLOATING : FX_VAR_MESSAGE);
+  FilterXVariableType variable_type = (key_str[0] == '$') ? FX_VAR_MESSAGE_TIED : FX_VAR_DECLARED_FLOATING;
+  FilterXVariableHandle handle = filterx_map_varname_to_handle(key_str, variable_type);
 
   FilterXVariable *variable = NULL;
-  if (is_floating)
-    variable = filterx_scope_register_declared_variable(scope, handle, NULL);
-  else
-    variable = filterx_scope_register_variable(scope, handle, NULL);
+  variable = filterx_scope_register_variable(scope, variable_type, handle, NULL);
 
   FilterXObject *cloned_value = filterx_object_clone(value);
-  filterx_variable_set_value(variable, cloned_value);
+  filterx_variable_set_value(variable, cloned_value, TRUE);
   filterx_object_unref(cloned_value);
 
   if (!variable)
@@ -143,7 +140,7 @@ _load_from_dict(FilterXObject *key, FilterXObject *value, gpointer user_data)
                 evt_tag_str("key", key_str),
                 evt_tag_str("value", repr->str),
                 evt_tag_str("type", value->type->name),
-                evt_tag_str("variable_type", is_floating ? "declared" : "message"));
+                evt_tag_int("variable_type", variable_type));
     }
 
   return TRUE;

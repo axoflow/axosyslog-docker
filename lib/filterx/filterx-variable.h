@@ -29,9 +29,38 @@
 #include "syslog-ng.h"
 #include "filterx-object.h"
 
+typedef enum
+{
+  FX_VAR_MESSAGE_TIED,
+  FX_VAR_FLOATING,
+  FX_VAR_DECLARED_FLOATING,
+} FilterXVariableType;
+
 #define FILTERX_SCOPE_MAX_GENERATION ((1UL << 20) - 1)
 
 typedef guint32 FilterXVariableHandle;
+
+#define FILTERX_HANDLE_FLOATING_BIT (1UL << 31)
+
+static inline gboolean
+filterx_variable_handle_is_floating(FilterXVariableHandle handle)
+{
+  return !!(handle & FILTERX_HANDLE_FLOATING_BIT);
+}
+
+static inline gboolean
+filterx_variable_handle_is_message_tied(FilterXVariableHandle handle)
+{
+  return !filterx_variable_handle_is_floating(handle);
+}
+
+static inline NVHandle
+filterx_variable_handle_to_nv_handle(FilterXVariableHandle handle)
+{
+  return handle & ~FILTERX_HANDLE_FLOATING_BIT;
+}
+
+FilterXVariableHandle filterx_map_varname_to_handle(const gchar *name, FilterXVariableType type);
 
 typedef struct _FilterXVariable
 {
@@ -43,41 +72,28 @@ typedef struct _FilterXVariable
    * declared -- this variable is declared (e.g. retained for the entire input pipeline)
    */
   guint32 assigned:1,
-          declared:1,
+          variable_type:2,
           generation:20;
   FilterXObject *value;
 } FilterXVariable;
 
-typedef enum
-{
-  FX_VAR_MESSAGE,
-  FX_VAR_FLOATING,
-  FX_VAR_DECLARED,
-} FilterXVariableType;
-
-
-void filterx_variable_init_instance(FilterXVariable *v, FilterXVariableHandle handle,
-                                    FilterXObject *initial_value, guint32 generation);
-void filterx_variable_free(FilterXVariable *v);
-
-#define FILTERX_HANDLE_FLOATING_BIT (1UL << 31)
-
-static inline gboolean
-filterx_variable_handle_is_floating(FilterXVariableHandle handle)
-{
-  return !!(handle & FILTERX_HANDLE_FLOATING_BIT);
-}
-
-static inline NVHandle
-filterx_variable_handle_to_nv_handle(FilterXVariableHandle handle)
-{
-  return handle & ~FILTERX_HANDLE_FLOATING_BIT;
-}
+void filterx_variable_init_instance(FilterXVariable *v,
+                                    FilterXVariableType variable_type,
+                                    FilterXVariableHandle handle,
+                                    FilterXObject *initial_value,
+                                    guint32 generation);
+void filterx_variable_clear(FilterXVariable *v);
 
 static inline gboolean
 filterx_variable_is_floating(FilterXVariable *v)
 {
   return filterx_variable_handle_is_floating(v->handle);
+}
+
+static inline gboolean
+filterx_variable_is_message_tied(FilterXVariable *v)
+{
+  return filterx_variable_handle_is_message_tied(v->handle);
 }
 
 static inline NVHandle
@@ -99,17 +115,17 @@ filterx_variable_get_value(FilterXVariable *v)
 }
 
 static inline void
-filterx_variable_set_value(FilterXVariable *v, FilterXObject *new_value)
+filterx_variable_set_value(FilterXVariable *v, FilterXObject *new_value, gboolean assignment)
 {
   filterx_object_unref(v->value);
   v->value = filterx_object_ref(new_value);
-  v->assigned = TRUE;
+  v->assigned = assignment;
 }
 
 static inline void
 filterx_variable_unset_value(FilterXVariable *v)
 {
-  filterx_variable_set_value(v, NULL);
+  filterx_variable_set_value(v, NULL, TRUE);
 }
 
 static inline gboolean
@@ -121,7 +137,7 @@ filterx_variable_is_set(FilterXVariable *v)
 static inline gboolean
 filterx_variable_is_declared(FilterXVariable *v)
 {
-  return v->declared;
+  return v->variable_type == FX_VAR_DECLARED_FLOATING;
 }
 
 static inline gboolean
@@ -147,13 +163,5 @@ filterx_variable_unassign(FilterXVariable *v)
 {
   v->assigned = FALSE;
 }
-
-static inline void
-filterx_variable_set_declared(FilterXVariable *v, gboolean declared)
-{
-  v->declared = declared;
-}
-
-FilterXVariableHandle filterx_map_varname_to_handle(const gchar *name, FilterXVariableType type);
 
 #endif
