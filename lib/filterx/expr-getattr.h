@@ -28,5 +28,6 @@
 
 FilterXExpr *filterx_getattr_new(FilterXExpr *lhs, FilterXString *attr_name);
 
+FILTERX_EXPR_DECLARE_TYPE(getattr);
 
 #endif

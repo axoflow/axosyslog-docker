@@ -27,5 +27,6 @@
 
 FilterXExpr *filterx_get_subscript_new(FilterXExpr *lhs, FilterXExpr *key);
 
+FILTERX_EXPR_DECLARE_TYPE(get_subscript);
 
 #endif

@@ -157,7 +157,7 @@ filterx_get_subscript_new(FilterXExpr *operand, FilterXExpr *key)
 {
   FilterXGetSubscript *self = g_new0(FilterXGetSubscript, 1);
 
-  filterx_expr_init_instance(&self->super, "get_subscript");
+  filterx_expr_init_instance(&self->super, FILTERX_EXPR_TYPE_NAME(get_subscript));
   self->super.eval = _eval_get_subscript;
   self->super.is_set = _isset;
   self->super.unset = _unset;
@@ -169,3 +169,5 @@ filterx_get_subscript_new(FilterXExpr *operand, FilterXExpr *key)
   self->key = key;
   return &self->super;
 }
+
+FILTERX_EXPR_DEFINE_TYPE(get_subscript);
