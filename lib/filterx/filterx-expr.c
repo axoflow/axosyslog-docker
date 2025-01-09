@@ -36,8 +36,11 @@ filterx_expr_set_location_with_text(FilterXExpr *self, CFG_LTYPE *lloc, const gc
     self->lloc = g_new0(CFG_LTYPE, 1);
   *self->lloc = *lloc;
 
-  if (debug_flag && text)
-    self->expr_text = g_strdup(text);
+  if (debug_flag && text && text != self->expr_text)
+    {
+      g_free(self->expr_text);
+      self->expr_text = g_strdup(text);
+    }
 }
 
 void
@@ -48,6 +51,7 @@ filterx_expr_set_location(FilterXExpr *self, CfgLexer *lexer, CFG_LTYPE *lloc)
   *self->lloc = *lloc;
   if (debug_flag)
     {
+      g_free(self->expr_text);
       GString *res = g_string_sized_new(0);
       cfg_source_extract_source_text(lexer, lloc, res);
       self->expr_text = g_string_free(res, FALSE);
