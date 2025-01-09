@@ -33,6 +33,7 @@
 #include "filterx/object-list-interface.h"
 #include "filterx/filterx-object-istype.h"
 #include "scratch-buffers.h"
+#include "str-utils.h"
 
 #define FILTERX_FUNC_STARTSWITH_USAGE "Usage: startswith(string, prefix, ignorecase=true)" \
 "or startswith(string, [prefix_1, prefix_2, ..], ignorecase=true)"
@@ -74,21 +75,16 @@ _format_str_obj(FilterXObject *obj)
   gsize str_len;
   if(!filterx_object_extract_string_ref(obj, &obj_str, &str_len))
     return NULL;
-  g_string_assign(str, obj_str);
+  g_string_assign_len(str, obj_str, str_len);
 
   return str;
 }
 
-static gboolean
+static inline gboolean
 _do_casefold(GString *str)
 {
-  if(str->len > G_MAXSSIZE)
-    return FALSE;
-
-  gchar *casefolded_str = g_utf8_casefold(str->str, (gssize) str->len);
-  g_string_assign(str, casefolded_str);
-
-  g_free(casefolded_str);
+  for (gsize i = 0; i < str->len; i++)
+    str->str[i] = ch_toupper(str->str[i]);
   return TRUE;
 }
 

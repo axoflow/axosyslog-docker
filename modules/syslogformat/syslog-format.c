@@ -62,24 +62,6 @@ _skip_char(const guchar **data, gint *left)
   return TRUE;
 }
 
-static inline gboolean
-_isdigit(char c)
-{
-  return c >= '0' && c <= '9';
-}
-
-static inline gboolean
-_isalpha(char c)
-{
-  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
-}
-
-static inline gboolean
-_isascii(char c)
-{
-  return c >= 0 && c <= 127;
-}
-
 static gint
 _skip_chars(const guchar **data, gint *length, const gchar *chars, gint max_len)
 {
@@ -150,7 +132,7 @@ _syslog_format_parse_pri(LogMessage *msg, const guchar **data, gint *length, gui
       pri = 0;
       while (left && *src != '>')
         {
-          if (_isdigit(*src))
+          if (ch_isdigit(*src))
             {
               pri = pri * 10 + ((*src) - '0');
             }
@@ -217,7 +199,7 @@ _syslog_format_parse_cisco_sequence_id(LogMessage *msg, const guchar **data, gin
 
   while (left && *src != ':')
     {
-      if (!_isdigit(*src))
+      if (!ch_isdigit(*src))
         return;
       if (!_skip_char(&src, &left))
         return;
@@ -325,7 +307,7 @@ _syslog_format_parse_version(LogMessage *msg, const guchar **data, gint *length)
 
   while (left && *src != ' ')
     {
-      if (_isdigit(*src))
+      if (ch_isdigit(*src))
         {
           version = version * 10 + ((*src) - '0');
         }
@@ -349,12 +331,12 @@ static gsize program_name_allowed_spacial_chars_len = G_N_ELEMENTS(program_name_
 static inline gboolean
 _validate_program_char(const guchar ch, gboolean *has_alpha)
 {
-  if (_isalpha(ch))
+  if (ch_isalpha(ch))
     {
       *has_alpha = TRUE;
       return TRUE;
     }
-  if (_isdigit(ch))
+  if (ch_isdigit(ch))
     return TRUE;
   if (memchr(program_name_allowed_specials, ch, program_name_allowed_spacial_chars_len))
     return TRUE;
@@ -625,7 +607,7 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
       open_sd++;
       do
         {
-          if (!left || !_isascii(*src) || *src == '=' || *src == ' ' || *src == ']' || *src == '"')
+          if (!left || !ch_isascii(*src) || *src == '=' || *src == ' ' || *src == ']' || *src == '"')
             goto error;
           /* read sd_id */
           pos = 0;
@@ -633,7 +615,7 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
             {
               if (pos < sizeof(sd_id_name) - 1 - options->sdata_prefix_len)
                 {
-                  if (_isascii(*src) && *src != '=' && *src != ' ' && *src != ']' && *src != '"')
+                  if (ch_isascii(*src) && *src != '=' && *src != ' ' && *src != ']' && *src != '"')
                     {
                       sd_id_name[pos] = *src;
                       pos++;
@@ -681,7 +663,7 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
               else
                 goto error;
 
-              if (!left || !_isascii(*src) || *src == '=' || *src == ' ' || *src == ']' || *src == '"')
+              if (!left || !ch_isascii(*src) || *src == '=' || *src == ' ' || *src == ']' || *src == '"')
                 goto error;
 
               /* read sd-param */
@@ -690,7 +672,7 @@ _syslog_format_parse_sd(LogMessage *msg, const guchar **data, gint *length, cons
                 {
                   if (pos < sizeof(sd_param_name) - 1 - sd_id_len)
                     {
-                      if (_isascii(*src) && *src != '=' && *src != ' ' && *src != ']' && *src != '"')
+                      if (ch_isascii(*src) && *src != '=' && *src != ' ' && *src != ']' && *src != '"')
                         {
                           sd_param_name[pos] = *src;
                           pos++;
@@ -985,7 +967,7 @@ _syslog_format_check_framing(LogMessage *msg, const guchar **data, gint *length)
   gint left = *length;
   gint i = 0;
 
-  while (left > 0 && _isdigit(*src))
+  while (left > 0 && ch_isdigit(*src))
     {
       if (!_skip_char(&src, &left))
         return;
