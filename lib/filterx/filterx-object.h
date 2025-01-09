@@ -354,4 +354,34 @@ filterx_object_set_modified_in_place(FilterXObject *self, gboolean modified)
   self->modified_in_place = modified;
 }
 
+static inline FilterXObject *
+filterx_object_path_lookup(FilterXObject *self, FilterXObject *keys[], size_t key_count)
+{
+  if (self == NULL)
+    {
+      return NULL;
+    }
+
+  if (!keys || key_count == 0)
+    {
+      return filterx_object_ref(self);
+    }
+
+  FilterXObject *next = filterx_object_get_subscript(self, keys[0]);
+  if (next == NULL)
+    {
+      return NULL;
+    }
+
+  FilterXObject *res = filterx_object_path_lookup(next, keys + 1, key_count - 1);
+  filterx_object_unref(next);
+  return res;
+}
+
+static inline FilterXObject *
+filterx_object_path_lookup_g(FilterXObject *self, GPtrArray *keys)
+{
+  return filterx_object_path_lookup(self, (FilterXObject **)keys->pdata, keys->len);
+}
+
 #endif

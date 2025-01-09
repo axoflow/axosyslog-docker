@@ -2654,3 +2654,32 @@ def test_keys(config, syslog_ng):
         r""""direct_access":"foo"}""" + "\n"
     )
     assert file_true.read_log() == exp
+
+
+def test_path_lookup(config, syslog_ng):
+    (file_true, file_false) = create_config(
+        config, r"""
+    dummy = "foobar";
+    dict = {"foo":{"bar":{"baz":"foobarbaz"}},"tik":{"tak":{"toe":"tiktaktoe"}}};
+    list = [[3,2,1],[6,5,4],[9,8,7]];
+    mixed = {"foo":[{"tik":[3,2,1]}]};
+    $MSG = json();
+    $MSG.empty = path_lookup(dummy,[]);
+    $MSG.dict = path_lookup(dict,["foo", "bar", "baz"]);
+    $MSG.list = path_lookup(list,[-1,0]);
+    $MSG.sub_dict = path_lookup(dict, ["foo","bar"]);
+    $MSG.mixed = path_lookup(mixed,["foo",0,"tik",-1]);
+    """,
+    )
+    syslog_ng.start(config)
+
+    assert file_true.get_stats()["processed"] == 1
+    assert "processed" not in file_false.get_stats()
+    exp = (
+        r"""{"empty":"foobar","""
+        r""""dict":"foobarbaz","""
+        r""""list":9,"""
+        r""""sub_dict":{"baz":"foobarbaz"},"""
+        r""""mixed":1}""" + "\n"
+    )
+    assert file_true.read_log() == exp

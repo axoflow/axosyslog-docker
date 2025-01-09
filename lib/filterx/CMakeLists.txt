@@ -62,6 +62,7 @@ set(FILTERX_HEADERS
     filterx/object-primitive.h
     filterx/object-string.h
     filterx/func-keys.h
+    filterx/func-path-lookup.h
     PARENT_SCOPE
     )
 
@@ -129,6 +130,7 @@ set(FILTERX_SOURCES
     filterx/object-primitive.c
     filterx/object-string.c
     filterx/func-keys.c
+    filterx/func-path-lookup.c
     PARENT_SCOPE
     )
 

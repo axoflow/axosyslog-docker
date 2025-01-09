@@ -48,6 +48,7 @@
 #include "filterx/expr-unset.h"
 #include "filterx/filterx-eval.h"
 #include "filterx/func-keys.h"
+#include "filterx/func-path-lookup.h"
 
 static GHashTable *filterx_builtin_simple_functions = NULL;
 static GHashTable *filterx_builtin_function_ctors = NULL;
@@ -152,6 +153,7 @@ _ctors_init(void)
   g_assert(filterx_builtin_function_ctor_register("includes", filterx_function_includes_new));
   g_assert(filterx_builtin_function_ctor_register("strftime", filterx_function_strftime_new));
   g_assert(filterx_builtin_function_ctor_register("keys", filterx_function_keys_new));
+  g_assert(filterx_builtin_function_ctor_register("path_lookup", filterx_function_path_lookup_new));
 }
 
 static void
