@@ -67,7 +67,8 @@ static gboolean _process_list(FilterXFunctionUnsetEmpties *self, FilterXObject *
 
 typedef int (*str_cmp_fn)(const char *, const char *);
 
-static gboolean _string_compare(FilterXFunctionUnsetEmpties *self, const gchar *str, str_cmp_fn cmp_fn)
+static inline gboolean
+_string_compare(FilterXFunctionUnsetEmpties *self, const gchar *str, str_cmp_fn cmp_fn)
 {
   guint num_targets = self->targets ? self->targets->len : 0;
   for (guint i = 0; i < num_targets; i++)
@@ -79,11 +80,11 @@ static gboolean _string_compare(FilterXFunctionUnsetEmpties *self, const gchar *
   return FALSE;
 }
 
-static gboolean _should_unset_string(FilterXFunctionUnsetEmpties *self, FilterXObject *obj)
+static gboolean
+_should_unset_string(FilterXFunctionUnsetEmpties *self, FilterXObject *obj)
 {
   gsize str_len = 0;
   const gchar *str = NULL;
-  gchar *casefold_str = NULL;
   if (!filterx_object_extract_string_ref(obj, &str, &str_len))
     return FALSE;
   g_assert(str);
@@ -91,16 +92,12 @@ static gboolean _should_unset_string(FilterXFunctionUnsetEmpties *self, FilterXO
   if (check_flag(self->flags, FILTERX_FUNC_UNSET_EMPTIES_FLAG_REPLACE_EMPTY_STRING) && (str_len == 0))
     return TRUE;
 
-  if (!g_utf8_validate(str, -1, NULL))
-    return FALSE;
   if (check_flag(self->flags, FILTERX_FUNC_UNSET_EMPTIES_FLAG_IGNORECASE))
     {
-      casefold_str = g_utf8_casefold(str, str_len);
-      gboolean result = _string_compare(self, casefold_str, g_utf8_collate);
-      g_free(casefold_str);
+      gboolean result = _string_compare(self, str, strcasecmp);
       return result;
     }
-  return _string_compare(self, str, g_strcmp0);
+  return _string_compare(self, str, strcmp);
 }
 
 static gboolean
@@ -404,18 +401,12 @@ _handle_target_object(FilterXFunctionUnsetEmpties *self, FilterXObject *target, 
           set_flag(&self->flags, FILTERX_FUNC_UNSET_EMPTIES_FLAG_REPLACE_EMPTY_STRING, TRUE);
           return TRUE;
         }
-      if (!g_utf8_validate(str, -1, NULL))
-        {
-          g_set_error(error, FILTERX_FUNCTION_ERROR, FILTERX_FUNCTION_ERROR_CTOR_FAIL,
-                      FILTERX_FUNC_UNSET_EMPTIES_ARG_NAME_TARGETS" strings must be valid utf8 strings! " FILTERX_FUNC_UNSET_EMPTIES_USAGE);
-          return FALSE;
-        }
       if (check_flag(self->flags, FILTERX_FUNC_UNSET_EMPTIES_FLAG_IGNORECASE))
         {
-          g_ptr_array_add(self->targets, g_utf8_casefold(str, len));
+          g_ptr_array_add(self->targets, g_strndup(str, len));
           return TRUE;
         }
-      g_ptr_array_add(self->targets, g_strdup(str));
+      g_ptr_array_add(self->targets, g_strndup(str, len));
     }
   else
     {
@@ -520,7 +511,14 @@ filterx_function_unset_empties_new(FilterXFunctionArgs *args, GError **error)
   self->super.super.deinit = _deinit;
   self->super.super.free_fn = _free;
 
-  reset_flags(&self->flags, ALL_FLAG_SET(FilterXFunctionUnsetEmptiesFlags));
+  /* everything is enabled except ignorecase */
+  reset_flags(&self->flags,
+              FLAG_VAL(FILTERX_FUNC_UNSET_EMPTIES_FLAG_RECURSIVE) |
+              FLAG_VAL(FILTERX_FUNC_UNSET_EMPTIES_FLAG_REPLACE_NULL) |
+              FLAG_VAL(FILTERX_FUNC_UNSET_EMPTIES_FLAG_REPLACE_EMPTY_STRING) |
+              FLAG_VAL(FILTERX_FUNC_UNSET_EMPTIES_FLAG_REPLACE_EMPTY_LIST) |
+              FLAG_VAL(FILTERX_FUNC_UNSET_EMPTIES_FLAG_REPLACE_EMPTY_DICT)
+             );
 
   if (!_extract_args(self, args, error) ||
       !filterx_function_args_check(args, error))
