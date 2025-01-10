@@ -191,7 +191,7 @@ filterx_variable_expr_new(FilterXString *name, FilterXVariableType variable_type
 {
   FilterXVariableExpr *self = g_new0(FilterXVariableExpr, 1);
 
-  filterx_expr_init_instance(&self->super, "variable");
+  filterx_expr_init_instance(&self->super, FILTERX_EXPR_TYPE_NAME(variable));
   self->super.free_fn = _free;
   self->super.eval = _eval_variable;
   self->super._update_repr = _update_repr;
@@ -228,8 +228,10 @@ filterx_variable_expr_declare(FilterXExpr *s)
 {
   FilterXVariableExpr *self = (FilterXVariableExpr *) s;
 
-  g_assert(s->eval == _eval_variable);
+  g_assert(filterx_expr_is_variable(s));
   /* we can only declare a floating variable */
   g_assert(self->variable_type == FX_VAR_FLOATING);
   self->variable_type = FX_VAR_DECLARED_FLOATING;
 }
+
+FILTERX_EXPR_DEFINE_TYPE(variable);

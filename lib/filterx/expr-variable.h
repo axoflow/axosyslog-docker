@@ -42,4 +42,6 @@ filterx_frozen_dollar_msg_varname(GlobalConfig *cfg, const gchar *name)
   return dollar_name_obj;
 }
 
+FILTERX_EXPR_DECLARE_TYPE(variable);
+
 #endif

@@ -49,12 +49,6 @@ _eval_generator(FilterXExpr *s)
   return NULL;
 }
 
-gboolean
-filterx_expr_is_generator(FilterXExpr *s)
-{
-  return s && s->eval == _eval_generator;
-}
-
 FilterXExpr *
 filterx_generator_optimize_method(FilterXExpr *s)
 {
@@ -67,7 +61,7 @@ filterx_generator_optimize_method(FilterXExpr *s)
 void
 filterx_generator_init_instance(FilterXExpr *s)
 {
-  filterx_expr_init_instance(s, "generator");
+  filterx_expr_init_instance(s, FILTERX_EXPR_TYPE_NAME(generator));
   s->optimize = filterx_generator_optimize_method;
   s->init = filterx_generator_init_method;
   s->deinit = filterx_generator_deinit_method;
@@ -103,6 +97,8 @@ filterx_generator_free_method(FilterXExpr *s)
   filterx_expr_unref(self->fillable);
   filterx_expr_free_method(s);
 }
+
+FILTERX_EXPR_DEFINE_TYPE(generator);
 
 typedef struct FilterXExprGeneratorCreateContainer_
 {

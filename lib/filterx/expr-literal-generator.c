@@ -250,6 +250,9 @@ typedef struct FilterXLiteralInnerGenerator_
   GList *elements;
 } FilterXLiteralInnerGenerator;
 
+FILTERX_EXPR_DEFINE_TYPE(literal_inner_dict_generator);
+FILTERX_EXPR_DEFINE_TYPE(literal_inner_list_generator);
+
 void
 _literal_inner_generator_free(FilterXExpr *s)
 {
@@ -261,9 +264,9 @@ _literal_inner_generator_free(FilterXExpr *s)
 
 static void
 _literal_inner_generator_init_instance(FilterXLiteralInnerGenerator *self, FilterXExpr *root_literal_generator,
-                                       GList *elements)
+                                       GList *elements, const gchar *type)
 {
-  filterx_expr_init_instance(&self->super, "literal_inner_generator");
+  filterx_expr_init_instance(&self->super, type);
   self->super.free_fn = _literal_inner_generator_free;
 
   /*
@@ -322,7 +325,7 @@ filterx_literal_inner_dict_generator_new(FilterXExpr *root_literal_generator, GL
 {
   FilterXLiteralInnerGenerator *self = g_new0(FilterXLiteralInnerGenerator, 1);
 
-  _literal_inner_generator_init_instance(self, root_literal_generator, elements);
+  _literal_inner_generator_init_instance(self, root_literal_generator, elements, FILTERX_EXPR_TYPE_NAME(literal_inner_dict_generator));
   self->super.eval = _inner_dict_generator_eval;
 
   return &self->super;
@@ -334,51 +337,17 @@ filterx_literal_inner_list_generator_new(FilterXExpr *root_literal_generator, GL
 {
   FilterXLiteralInnerGenerator *self = g_new0(FilterXLiteralInnerGenerator, 1);
 
-  _literal_inner_generator_init_instance(self, root_literal_generator, elements);
+  _literal_inner_generator_init_instance(self, root_literal_generator, elements, FILTERX_EXPR_TYPE_NAME(literal_inner_list_generator));
   self->super.eval = _inner_list_generator_eval;
 
   return &self->super;
-}
-
-gboolean
-_filterx_expr_is_inner_dict_generator(FilterXExpr *s)
-{
-  return s && (s->eval == _inner_dict_generator_eval);
-}
-
-gboolean
-_filterx_expr_is_inner_list_generator(FilterXExpr *s)
-{
-  return s && (s->eval == _inner_list_generator_eval);
-}
-
-gboolean
-filterx_expr_is_literal_dict_generator(FilterXExpr *s)
-{
-  FilterXExprGenerator *generator = (FilterXExprGenerator *) s;
-  return (filterx_expr_is_generator(s) && generator->create_container == filterx_generator_create_dict_container)
-         || _filterx_expr_is_inner_dict_generator(s);
-}
-
-gboolean
-filterx_expr_is_literal_list_generator(FilterXExpr *s)
-{
-  FilterXExprGenerator *generator = (FilterXExprGenerator *) s;
-  return (filterx_expr_is_generator(s) && generator->create_container == filterx_generator_create_list_container)
-         || _filterx_expr_is_inner_list_generator(s);
-}
-
-gboolean
-filterx_expr_is_literal_generator(FilterXExpr *s)
-{
-  return filterx_expr_is_literal_list_generator(s) || filterx_expr_is_literal_dict_generator(s);
 }
 
 guint
 filterx_expr_literal_generator_len(FilterXExpr *s)
 {
   GList *elements = NULL;
-  if (_filterx_expr_is_inner_dict_generator(s))
+  if (filterx_expr_is_literal_inner_dict_generator(s))
     elements = ((FilterXLiteralInnerGenerator *) s)->elements;
   else
     elements = ((FilterXExprLiteralGenerator *) s)->elements;
@@ -390,7 +359,7 @@ gboolean
 filterx_literal_dict_generator_foreach(FilterXExpr *s, FilterXLiteralDictGeneratorForeachFunc func, gpointer user_data)
 {
   GList *elements = NULL;
-  if (_filterx_expr_is_inner_dict_generator(s))
+  if (filterx_expr_is_literal_inner_dict_generator(s))
     elements = ((FilterXLiteralInnerGenerator *) s)->elements;
   else
     elements = ((FilterXExprLiteralGenerator *) s)->elements;
@@ -410,7 +379,7 @@ gboolean
 filterx_literal_list_generator_foreach(FilterXExpr *s, FilterXLiteralListGeneratorForeachFunc func, gpointer user_data)
 {
   GList *elements = NULL;
-  if (_filterx_expr_is_inner_list_generator(s))
+  if (filterx_expr_is_literal_inner_list_generator(s))
     elements = ((FilterXLiteralInnerGenerator *) s)->elements;
   else
     elements = ((FilterXExprLiteralGenerator *) s)->elements;

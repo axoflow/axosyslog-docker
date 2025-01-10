@@ -20,7 +20,7 @@
  * COPYING for details.
  *
  */
-#include "filterx/filterx-expr.h"
+#include "filterx/expr-literal.h"
 
 typedef struct _FilterXLiteral
 {
@@ -49,15 +49,11 @@ filterx_literal_new(FilterXObject *object)
 {
   FilterXLiteral *self = g_new0(FilterXLiteral, 1);
 
-  filterx_expr_init_instance(&self->super, "literal");
+  filterx_expr_init_instance(&self->super, FILTERX_EXPR_TYPE_NAME(literal));
   self->super.eval = _eval_literal;
   self->super.free_fn = _free;
   self->object = object;
   return &self->super;
 }
 
-gboolean
-filterx_expr_is_literal(FilterXExpr *expr)
-{
-  return expr->eval == _eval_literal;
-}
+FILTERX_EXPR_DEFINE_TYPE(literal);
