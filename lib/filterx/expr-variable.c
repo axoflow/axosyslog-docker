@@ -208,7 +208,7 @@ filterx_variable_expr_new(FilterXString *name, FilterXVariableType type)
 {
   FilterXVariableExpr *self = g_new0(FilterXVariableExpr, 1);
 
-  filterx_expr_init_instance(&self->super);
+  filterx_expr_init_instance(&self->super, "variable");
   self->super.free_fn = _free;
   self->super.init = _init;
   self->super.deinit = _deinit;

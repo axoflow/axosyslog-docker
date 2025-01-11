@@ -67,7 +67,7 @@ filterx_generator_optimize_method(FilterXExpr *s)
 void
 filterx_generator_init_instance(FilterXExpr *s)
 {
-  filterx_expr_init_instance(s);
+  filterx_expr_init_instance(s, "generator");
   s->optimize = filterx_generator_optimize_method;
   s->init = filterx_generator_init_method;
   s->deinit = filterx_generator_deinit_method;
@@ -188,7 +188,7 @@ filterx_generator_create_container_new(FilterXExpr *g, FilterXExpr *fillable_par
 {
   FilterXExprGeneratorCreateContainer *self = g_new0(FilterXExprGeneratorCreateContainer, 1);
 
-  filterx_expr_init_instance(&self->super);
+  filterx_expr_init_instance(&self->super, "create_container");
   self->generator = (FilterXExprGenerator *) g;
   self->fillable_parent = fillable_parent;
   self->super.optimize = _create_container_optimize;

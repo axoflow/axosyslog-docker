@@ -263,7 +263,7 @@ static void
 _literal_inner_generator_init_instance(FilterXLiteralInnerGenerator *self, FilterXExpr *root_literal_generator,
                                        GList *elements)
 {
-  filterx_expr_init_instance(&self->super);
+  filterx_expr_init_instance(&self->super, "literal_inner_generator");
   self->super.free_fn = _literal_inner_generator_free;
 
   /*

@@ -238,12 +238,10 @@ _filterx_ref_add(FilterXObject *s, FilterXObject *object)
   return filterx_object_add_object(self->value, object);
 }
 
+/* NOTE: fastpath is in the header as an inline function */
 FilterXObject *
-filterx_ref_new(FilterXObject *value)
+_filterx_ref_new(FilterXObject *value)
 {
-  if (!value || value->readonly || !_filterx_type_is_referenceable(value->type))
-    return value;
-
   if (filterx_object_is_type(value, &FILTERX_TYPE_NAME(ref)))
     {
       FilterXRef *absorbed_ref = (FilterXRef *) value;
