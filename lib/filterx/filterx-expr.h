@@ -56,10 +56,31 @@ struct _FilterXExpr
   FilterXExpr *(*optimize)(FilterXExpr *self);
   void (*free_fn)(FilterXExpr *self);
 
+  /* type of the expr, is not freed, assumed to be managed by something else
+   * */
+
   const gchar *type;
+
+  /* name associated with the expr (e.g.  function name), is not freed by
+   * FilterXExpr, assumed to be managed by something else */
+  const gchar *name;
   CFG_LTYPE *lloc;
   gchar *expr_text;
 };
+
+#define FILTERX_EXPR_TYPE_NAME(_type) filterx_expr_type_ ## _type
+
+#define FILTERX_EXPR_DECLARE_TYPE(_type) \
+  extern const gchar *FILTERX_EXPR_TYPE_NAME(_type); \
+  \
+  static inline gboolean \
+  filterx_expr_is_ ## _type(FilterXExpr *expr) \
+  { \
+    return expr && expr->type == FILTERX_EXPR_TYPE_NAME(_type); \
+  }
+
+#define FILTERX_EXPR_DEFINE_TYPE(_type) \
+  const gchar *FILTERX_EXPR_TYPE_NAME(_type) = # _type
 
 /*
  * Evaluate the expression and return the result as a FilterXObject.  The
@@ -151,7 +172,7 @@ void filterx_expr_set_location(FilterXExpr *self, CfgLexer *lexer, CFG_LTYPE *ll
 void filterx_expr_set_location_with_text(FilterXExpr *self, CFG_LTYPE *lloc, const gchar *text);
 EVTTAG *filterx_expr_format_location_tag(FilterXExpr *self);
 FilterXExpr *filterx_expr_optimize(FilterXExpr *self);
-void filterx_expr_init_instance(FilterXExpr *self);
+void filterx_expr_init_instance(FilterXExpr *self, const gchar *type);
 FilterXExpr *filterx_expr_new(void);
 FilterXExpr *filterx_expr_ref(FilterXExpr *self);
 void filterx_expr_unref(FilterXExpr *self);
@@ -190,7 +211,6 @@ typedef struct _FilterXUnaryOp
 {
   FilterXExpr super;
   FilterXExpr *operand;
-  const gchar *name;
 } FilterXUnaryOp;
 
 FilterXExpr *filterx_unary_op_optimize_method(FilterXExpr *s);
@@ -203,7 +223,6 @@ typedef struct _FilterXBinaryOp
 {
   FilterXExpr super;
   FilterXExpr *lhs, *rhs;
-  const gchar *name;
 } FilterXBinaryOp;
 
 FilterXExpr *filterx_binary_op_optimize_method(FilterXExpr *s);

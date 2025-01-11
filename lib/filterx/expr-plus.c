@@ -34,7 +34,7 @@ typedef struct FilterXOperatorPlus
 } FilterXOperatorPlus;
 
 static FilterXObject *
-_eval(FilterXExpr *s)
+_eval_plus(FilterXExpr *s)
 {
   FilterXOperatorPlus *self = (FilterXOperatorPlus *) s;
 
@@ -72,7 +72,7 @@ _optimize(FilterXExpr *s)
     self->literal_rhs = filterx_expr_eval(self->super.rhs);
 
   if (self->literal_lhs && self->literal_rhs)
-    return filterx_literal_new(_eval(&self->super.super));
+    return filterx_literal_new(_eval_plus(&self->super.super));
   return NULL;
 }
 
@@ -92,7 +92,7 @@ filterx_operator_plus_new(FilterXExpr *lhs, FilterXExpr *rhs)
   FilterXOperatorPlus *self = g_new0(FilterXOperatorPlus, 1);
   filterx_binary_op_init_instance(&self->super, "plus", lhs, rhs);
   self->super.super.optimize = _optimize;
-  self->super.super.eval = _eval;
+  self->super.super.eval = _eval_plus;
   self->super.super.free_fn = _filterx_operator_plus_free;
 
   return &self->super.super;

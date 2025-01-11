@@ -119,10 +119,8 @@ filterx_format_last_error_location(void)
 }
 
 FilterXEvalResult
-filterx_eval_exec(FilterXEvalContext *context, FilterXExpr *expr, LogMessage *msg)
+filterx_eval_exec(FilterXEvalContext *context, FilterXExpr *expr)
 {
-  context->msgs = &msg;
-  context->num_msg = 1;
   FilterXEvalResult result = FXE_FAILURE;
 
   FilterXObject *res = filterx_expr_eval(expr);
@@ -142,22 +140,16 @@ filterx_eval_exec(FilterXEvalContext *context, FilterXExpr *expr, LogMessage *ms
   filterx_object_unref(res);
   /* NOTE: we only store the results into the message if the entire evaluation was successful */
 fail:
-  filterx_scope_set_dirty(context->scope);
   return result;
 }
 
 void
-filterx_eval_init_context(FilterXEvalContext *context, FilterXEvalContext *previous_context)
+filterx_eval_init_context(FilterXEvalContext *context, FilterXEvalContext *previous_context, FilterXScope *scope, LogMessage *msg)
 {
-  FilterXScope *scope;
-
-  if (previous_context)
-    scope = filterx_scope_ref(previous_context->scope);
-  else
-    scope = filterx_scope_new();
-  filterx_scope_make_writable(&scope);
+  filterx_scope_set_message(scope, msg);
 
   memset(context, 0, sizeof(*context));
+  context->msg = msg;
   context->template_eval_options = DEFAULT_TEMPLATE_EVAL_OPTIONS;
   context->scope = scope;
 
@@ -176,7 +168,6 @@ filterx_eval_deinit_context(FilterXEvalContext *context)
 {
   if (!context->previous_context)
     g_ptr_array_free(context->weak_refs, TRUE);
-  filterx_scope_unref(context->scope);
   filterx_eval_set_context(context->previous_context);
 }
 

@@ -67,13 +67,13 @@ _extract_args(FilterXFunctionIsSdataFromEnteprise *self, FilterXFunctionArgs *ar
 }
 
 static FilterXObject *
-_eval(FilterXExpr *s)
+_eval_fx_is_sdata_from(FilterXExpr *s)
 {
   FilterXFunctionIsSdataFromEnteprise *self = (FilterXFunctionIsSdataFromEnteprise *) s;
 
   gboolean contains = FALSE;
   FilterXEvalContext *context = filterx_eval_get_context();
-  LogMessage *msg = context->msgs[0];
+  LogMessage *msg = context->msg;
 
   for (guint8 i = 0; i < msg->num_sdata && !contains; i++)
     {
@@ -105,7 +105,7 @@ filterx_function_is_sdata_from_enterprise_new(FilterXFunctionArgs *args, GError 
 
   if (!_extract_args(self, args, error) || !filterx_function_args_check(args, error))
     goto error;
-  self->super.super.eval = _eval;
+  self->super.super.eval = _eval_fx_is_sdata_from;
   self->super.super.free_fn = _free;
   filterx_function_args_free(args);
   return &self->super.super;
@@ -127,7 +127,7 @@ filterx_simple_function_has_sdata(FilterXExpr *s, FilterXObject *args[], gsize a
     }
 
   FilterXEvalContext *context = filterx_eval_get_context();
-  LogMessage *msg = context->msgs[0];
+  LogMessage *msg = context->msg;
   return filterx_boolean_new(msg->num_sdata != 0);
 }
 
@@ -224,7 +224,7 @@ static gboolean
 _generate(FilterXExprGenerator *s, FilterXObject *fillable)
 {
   FilterXEvalContext *context = filterx_eval_get_context();
-  LogMessage *msg = context->msgs[0];
+  LogMessage *msg = context->msg;
 
   const gchar *current_sd_id_start;
   gsize current_sd_id_len;

@@ -45,6 +45,20 @@ Test(filterx_string, test_filterx_object_string_maps_to_the_right_json_value)
   filterx_object_unref(fobj);
 }
 
+static void
+_translate_to_incremented(gchar *target, const gchar *source, gsize len)
+{
+  for (gsize i = 0; i < len; i++)
+    target[i] = source[i] + 1;
+}
+
+Test(filterx_string, test_filterx_string_new_translate)
+{
+  FilterXObject *fobj = filterx_string_new_translated("VMS", 3, _translate_to_incremented);
+  assert_object_json_equals(fobj, "\"WNT\"");
+  filterx_object_unref(fobj);
+}
+
 Test(filterx_string, test_filterx_string_typecast_null_args)
 {
   FilterXObject *obj = filterx_typecast_string(NULL, NULL, 0);

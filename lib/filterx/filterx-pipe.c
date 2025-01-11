@@ -64,51 +64,51 @@ log_filterx_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_o
 {
   LogFilterXPipe *self = (LogFilterXPipe *) s;
   FilterXEvalContext eval_context;
-  LogPathOptions local_path_options;
-  FilterXEvalResult eval_res;
-
-  path_options = log_path_options_chain(&local_path_options, path_options);
-  filterx_eval_init_context(&eval_context, path_options->filterx_context);
-
-  if (filterx_scope_has_log_msg_changes(eval_context.scope))
-    filterx_scope_invalidate_log_msg_cache(eval_context.scope);
-
-  msg_trace(">>>>>> filterx rule evaluation begin",
-            evt_tag_str("rule", self->name),
-            log_pipe_location_tag(s),
-            evt_tag_msg_reference(msg));
+  FilterXEvalContext *previous_context = path_options->filterx_context;
 
   NVTable *payload = nv_table_ref(msg->payload);
-  eval_res = filterx_eval_exec(&eval_context, self->block, msg);
-
-  msg_trace("<<<<<< filterx rule evaluation result",
-            filterx_format_eval_result(eval_res),
-            evt_tag_str("rule", self->name),
-            log_pipe_location_tag(s),
-            evt_tag_int("dirty", filterx_scope_is_dirty(eval_context.scope)),
-            evt_tag_msg_reference(msg));
-
-  local_path_options.filterx_context = &eval_context;
-  switch (eval_res)
+  FILTERX_EVAL_BEGIN_CONTEXT(eval_context, previous_context)
     {
-    case FXE_SUCCESS:
-      log_pipe_forward_msg(s, msg, path_options);
-      break;
+      FilterXEvalResult eval_res;
+      LogPathOptions local_path_options;
 
-    case FXE_FAILURE:
-      if (path_options->matched)
-        (*path_options->matched) = FALSE;
-    /* FALLTHROUGH */
-    case FXE_DROP:
-      log_msg_drop(msg, path_options, AT_PROCESSED);
-      break;
+      path_options = log_path_options_chain(&local_path_options, path_options);
 
-    default:
-      g_assert_not_reached();
-      break;
+      msg_trace(">>>>>> filterx rule evaluation begin",
+                evt_tag_str("rule", self->name),
+                log_pipe_location_tag(s),
+                evt_tag_msg_reference(msg));
+
+      eval_res = filterx_eval_exec(&eval_context, self->block);
+
+      msg_trace("<<<<<< filterx rule evaluation result",
+                filterx_format_eval_result(eval_res),
+                evt_tag_str("rule", self->name),
+                log_pipe_location_tag(s),
+                evt_tag_int("dirty", filterx_scope_is_dirty(eval_context.scope)),
+                evt_tag_msg_reference(msg));
+
+      local_path_options.filterx_context = &eval_context;
+      switch (eval_res)
+        {
+        case FXE_SUCCESS:
+          log_pipe_forward_msg(s, msg, path_options);
+          break;
+
+        case FXE_FAILURE:
+          if (path_options->matched)
+            (*path_options->matched) = FALSE;
+        /* FALLTHROUGH */
+        case FXE_DROP:
+          log_msg_drop(msg, path_options, AT_PROCESSED);
+          break;
+
+        default:
+          g_assert_not_reached();
+          break;
+        }
     }
-
-  filterx_eval_deinit_context(&eval_context);
+  FILTERX_EVAL_END_CONTEXT(eval_context);
   nv_table_unref(payload);
 }
 

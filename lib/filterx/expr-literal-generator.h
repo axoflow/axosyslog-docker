@@ -46,10 +46,31 @@ gboolean filterx_literal_list_generator_foreach(FilterXExpr *s, FilterXLiteralLi
 FilterXExpr *filterx_literal_inner_dict_generator_new(FilterXExpr *root_literal_generator, GList *elements);
 FilterXExpr *filterx_literal_inner_list_generator_new(FilterXExpr *root_literal_generator, GList *elements);
 
-gboolean filterx_expr_is_literal_dict_generator(FilterXExpr *s);
-gboolean filterx_expr_is_literal_list_generator(FilterXExpr *s);
-
 guint filterx_expr_literal_generator_len(FilterXExpr *s);
-gboolean filterx_expr_is_literal_generator(FilterXExpr *s);
+
+FILTERX_EXPR_DECLARE_TYPE(literal_inner_dict_generator);
+FILTERX_EXPR_DECLARE_TYPE(literal_inner_list_generator);
+
+static inline gboolean
+filterx_expr_is_literal_dict_generator(FilterXExpr *s)
+{
+  FilterXExprGenerator *generator = (FilterXExprGenerator *) s;
+  return (filterx_expr_is_generator(s) && generator->create_container == filterx_generator_create_dict_container)
+         || filterx_expr_is_literal_inner_dict_generator(s);
+}
+
+static inline gboolean
+filterx_expr_is_literal_list_generator(FilterXExpr *s)
+{
+  FilterXExprGenerator *generator = (FilterXExprGenerator *) s;
+  return (filterx_expr_is_generator(s) && generator->create_container == filterx_generator_create_list_container)
+         || filterx_expr_is_literal_inner_list_generator(s);
+}
+
+static inline gboolean
+filterx_expr_is_literal_generator(FilterXExpr *s)
+{
+  return filterx_expr_is_literal_list_generator(s) || filterx_expr_is_literal_dict_generator(s);
+}
 
 #endif

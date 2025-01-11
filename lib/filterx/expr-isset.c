@@ -25,7 +25,7 @@
 #include "filterx/object-primitive.h"
 
 static FilterXObject *
-_eval(FilterXExpr *s)
+_eval_isset(FilterXExpr *s)
 {
   FilterXUnaryOp *self = (FilterXUnaryOp *) s;
 
@@ -37,6 +37,6 @@ filterx_isset_new(FilterXExpr *expr)
 {
   FilterXUnaryOp *self = g_new0(FilterXUnaryOp, 1);
   filterx_unary_op_init_instance(self, "isset", expr);
-  self->super.eval = _eval;
+  self->super.eval = _eval_isset;
   return &self->super;
 }

@@ -26,6 +26,7 @@
 #include "filterx/object-extractor.h"
 #include "filterx/object-string.h"
 #include "filterx/filterx-eval.h"
+#include "str-utils.h"
 
 static const gchar *
 _extract_str_arg(FilterXExpr *s, FilterXObject *args[], gsize args_len, gssize *len)
@@ -50,6 +51,24 @@ _extract_str_arg(FilterXExpr *s, FilterXObject *args[], gsize args_len, gssize *
   return str;
 }
 
+static void
+_translate_to_lower(gchar *target, const gchar *source, gsize len)
+{
+  for (gsize i = 0; i < len; i++)
+    {
+      target[i] = ch_tolower(source[i]);
+    }
+}
+
+static void
+_translate_to_upper(gchar *target, const gchar *source, gsize len)
+{
+  for (gsize i = 0; i < len; i++)
+    {
+      target[i] = ch_toupper(source[i]);
+    }
+}
+
 FilterXObject *
 filterx_simple_function_lower(FilterXExpr *s, FilterXObject *args[], gsize args_len)
 {
@@ -58,10 +77,7 @@ filterx_simple_function_lower(FilterXExpr *s, FilterXObject *args[], gsize args_
   if (!str)
     return NULL;
 
-  gchar *lower = g_utf8_strdown(str, len);
-  FilterXObject *result = filterx_string_new(lower, -1);
-  g_free(lower);
-
+  FilterXObject *result = filterx_string_new_translated(str, len, _translate_to_lower);
   return result;
 }
 
@@ -73,9 +89,6 @@ filterx_simple_function_upper(FilterXExpr *s, FilterXObject *args[], gsize args_
   if (!str)
     return NULL;
 
-  gchar *upper = g_utf8_strup(str, len);
-  FilterXObject *result = filterx_string_new(upper, -1);
-  g_free(upper);
-
+  FilterXObject *result = filterx_string_new_translated(str, len, _translate_to_upper);
   return result;
 }

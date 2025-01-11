@@ -124,6 +124,7 @@ struct _LogExprNode
   gchar *filename;
   gint line, column;
   gint child_id;
+  gchar *expr_text;
 };
 
 gint log_expr_node_lookup_flag(const gchar *flag);

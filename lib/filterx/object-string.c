@@ -26,7 +26,6 @@
 #include "scratch-buffers.h"
 #include "filterx-globals.h"
 #include "filterx/filterx-object-istype.h"
-#include "utf8utils.h"
 #include "str-format.h"
 #include "str-utils.h"
 
@@ -143,8 +142,8 @@ _string_add(FilterXObject *s, FilterXObject *object)
   return filterx_string_new(buffer->str, buffer->len);
 }
 
-FilterXString *
-_string_new(const gchar *str, gssize str_len)
+static inline FilterXString *
+_string_new(const gchar *str, gssize str_len, FilterXStringTranslateFunc translate)
 {
   if (str_len < 0)
     str_len = strlen(str);
@@ -154,7 +153,10 @@ _string_new(const gchar *str, gssize str_len)
   filterx_object_init_instance(&self->super, &FILTERX_TYPE_NAME(string));
 
   self->str_len = str_len;
-  memcpy(self->str, str, str_len);
+  if (translate)
+    translate(self->str, str, str_len);
+  else
+    memcpy(self->str, str, str_len);
   self->str[str_len] = 0;
 
   return self;
@@ -163,13 +165,19 @@ _string_new(const gchar *str, gssize str_len)
 FilterXObject *
 filterx_string_new(const gchar *str, gssize str_len)
 {
-  return &_string_new(str, str_len)->super;
+  return &_string_new(str, str_len, NULL)->super;
+}
+
+FilterXObject *
+filterx_string_new_translated(const gchar *str, gssize str_len, FilterXStringTranslateFunc translate)
+{
+  return &_string_new(str, str_len, translate)->super;
 }
 
 FilterXString *
 filterx_string_typed_new(const gchar *str)
 {
-  return _string_new(str, -1);
+  return _string_new(str, -1, NULL);
 }
 
 static inline gsize

@@ -155,12 +155,6 @@ _init(FilterXExpr *s, GlobalConfig *cfg)
       return FALSE;
     }
 
-  stats_lock();
-  StatsClusterKey sc_key;
-  stats_cluster_single_key_set(&sc_key, "fx_setattr_evals_total", NULL, 0);
-  stats_register_counter(STATS_LEVEL3, &sc_key, SC_TYPE_SINGLE_VALUE, &self->super.eval_count);
-  stats_unlock();
-
   return filterx_expr_init_method(s, cfg);
 }
 
@@ -168,12 +162,6 @@ static void
 _deinit(FilterXExpr *s, GlobalConfig *cfg)
 {
   FilterXSetAttr *self = (FilterXSetAttr *) s;
-
-  stats_lock();
-  StatsClusterKey sc_key;
-  stats_cluster_single_key_set(&sc_key, "fx_setattr_evals_total", NULL, 0);
-  stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->super.eval_count);
-  stats_unlock();
 
   filterx_expr_deinit(self->object, cfg);
   filterx_expr_deinit(self->new_value, cfg);
@@ -191,13 +179,14 @@ _free(FilterXExpr *s)
   filterx_expr_free_method(s);
 }
 
+/* Takes reference of object and new_value */
 FilterXExpr *
-filterx_nullv_setattr_new(FilterXExpr *object, FilterXString *attr_name, FilterXExpr *new_value)
+filterx_setattr_new(FilterXExpr *object, FilterXString *attr_name, FilterXExpr *new_value)
 {
   FilterXSetAttr *self = g_new0(FilterXSetAttr, 1);
 
-  filterx_expr_init_instance(&self->super);
-  self->super.eval = _nullv_setattr_eval;
+  filterx_expr_init_instance(&self->super, "setattr");
+  self->super.eval = _setattr_eval;
   self->super.optimize = _optimize;
   self->super.init = _init;
   self->super.deinit = _deinit;
@@ -211,23 +200,11 @@ filterx_nullv_setattr_new(FilterXExpr *object, FilterXString *attr_name, FilterX
   return &self->super;
 }
 
-/* Takes reference of object and new_value */
 FilterXExpr *
-filterx_setattr_new(FilterXExpr *object, FilterXString *attr_name, FilterXExpr *new_value)
+filterx_nullv_setattr_new(FilterXExpr *object, FilterXString *attr_name, FilterXExpr *new_value)
 {
-  FilterXSetAttr *self = g_new0(FilterXSetAttr, 1);
-
-  filterx_expr_init_instance(&self->super);
-  self->super.eval = _setattr_eval;
-  self->super.optimize = _optimize;
-  self->super.init = _init;
-  self->super.deinit = _deinit;
-  self->super.free_fn = _free;
-  self->object = object;
-
-  self->attr = (FilterXObject *) attr_name;
-
-  self->new_value = new_value;
-  self->super.ignore_falsy_result = TRUE;
-  return &self->super;
+  FilterXExpr *self = filterx_setattr_new(object, attr_name, new_value);
+  self->type = "nullv_setattr";
+  self->eval = _nullv_setattr_eval;
+  return self;
 }

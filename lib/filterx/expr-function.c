@@ -242,26 +242,12 @@ filterx_function_optimize_method(FilterXFunction *s)
 gboolean
 filterx_function_init_method(FilterXFunction *s, GlobalConfig *cfg)
 {
-  stats_lock();
-  StatsClusterKey sc_key;
-  StatsClusterLabel labels[] = { stats_cluster_label("name", s->function_name) };
-  stats_cluster_single_key_set(&sc_key, "fx_func_evals_total", labels, G_N_ELEMENTS(labels));
-  stats_register_counter(STATS_LEVEL3, &sc_key, SC_TYPE_SINGLE_VALUE, &s->super.eval_count);
-  stats_unlock();
-
   return filterx_expr_init_method(&s->super, cfg);
 }
 
 void
 filterx_function_deinit_method(FilterXFunction *s, GlobalConfig *cfg)
 {
-  stats_lock();
-  StatsClusterKey sc_key;
-  StatsClusterLabel labels[] = { stats_cluster_label("name", s->function_name) };
-  stats_cluster_single_key_set(&sc_key, "fx_func_evals_total", labels, G_N_ELEMENTS(labels));
-  stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &s->super.eval_count);
-  stats_unlock();
-
   filterx_expr_deinit_method(&s->super, cfg);
 }
 
@@ -303,11 +289,12 @@ _function_free(FilterXExpr *s)
 void
 filterx_function_init_instance(FilterXFunction *s, const gchar *function_name)
 {
-  filterx_expr_init_instance(&s->super);
+  filterx_expr_init_instance(&s->super, "function");
   s->function_name = g_strdup_printf("%s()", function_name);
   s->super.optimize = _function_optimize;
   s->super.init = _function_init;
   s->super.deinit = _function_deinit;
+  s->super.name = s->function_name;
   s->super.free_fn = _function_free;
 }
 

@@ -32,7 +32,7 @@ typedef struct FilterXExprUnset_
 } FilterXExprUnset;
 
 static FilterXObject *
-_eval(FilterXExpr *s)
+_eval_unset(FilterXExpr *s)
 {
   FilterXExprUnset *self = (FilterXExprUnset *) s;
 
@@ -110,7 +110,7 @@ filterx_function_unset_new(FilterXFunctionArgs *args, GError **error)
   FilterXExprUnset *self = g_new0(FilterXExprUnset, 1);
   filterx_function_init_instance(&self->super, "unset");
 
-  self->super.super.eval = _eval;
+  self->super.super.eval = _eval_unset;
   self->super.super.optimize = _optimize;
   self->super.super.init = _init;
   self->super.super.deinit = _deinit;

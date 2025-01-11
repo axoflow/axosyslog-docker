@@ -168,7 +168,7 @@ filterx_dummy_error_new(const gchar *msg)
 {
   FilterXDummyError *self = g_new0(FilterXDummyError, 1);
   self->msg = g_strdup(msg);
-  filterx_expr_init_instance(&self->super);
+  filterx_expr_init_instance(&self->super, "dummy");
   self->super.eval = _eval;
   self->super.free_fn = _free;
   return &self->super;
@@ -193,10 +193,8 @@ init_libtest_filterx(void)
   FILTERX_TYPE_NAME(test_list) = FILTERX_TYPE_NAME(json_array);
 
   filterx_env.msg = create_sample_message();
-  filterx_eval_init_context(&filterx_env.context, NULL);
-  filterx_env.context.msgs = &filterx_env.msg;
-  filterx_env.context.num_msg = 1;
-
+  filterx_env.scope = filterx_scope_new(NULL);
+  filterx_eval_init_context(&filterx_env.context, NULL, filterx_env.scope, filterx_env.msg);
 }
 
 void
@@ -204,6 +202,7 @@ deinit_libtest_filterx(void)
 {
   log_msg_unref(filterx_env.msg);
   filterx_eval_deinit_context(&filterx_env.context);
+  filterx_scope_free(filterx_env.scope);
 }
 
 static FilterXObject *

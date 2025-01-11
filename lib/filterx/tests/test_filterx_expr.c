@@ -86,12 +86,6 @@ Test(filterx_expr, test_filterx_template_evaluates_to_the_expanded_value)
   filterx_object_unref(fobj);
 }
 
-struct _FilterXScope
-{
-  GHashTable *value_cache;
-  GPtrArray *weak_refs;
-};
-
 Test(filterx_expr, test_filterx_list_merge)
 {
   // $fillable = json_array();

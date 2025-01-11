@@ -206,7 +206,7 @@ _process_field(Field *field, FilterXObject *dict)
 }
 
 static FilterXObject *
-_eval(FilterXExpr *s)
+_eval_fx_set_fields(FilterXExpr *s)
 {
   FilterXFunctionSetFields *self = (FilterXFunctionSetFields *) s;
 
@@ -495,7 +495,7 @@ filterx_function_set_fields_new(FilterXFunctionArgs *args, GError **error)
   FilterXFunctionSetFields *self = g_new0(FilterXFunctionSetFields, 1);
   filterx_function_init_instance(&self->super, "set_fields");
 
-  self->super.super.eval = _eval;
+  self->super.super.eval = _eval_fx_set_fields;
   self->super.super.optimize = _optimize;
   self->super.super.init = _init;
   self->super.super.deinit = _deinit;

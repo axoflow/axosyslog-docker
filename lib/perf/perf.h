@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2023 Balazs Scheidler <balazs.scheidler@axoflow.com>
+ * Copyright (c) 2024 Axoflow
+ * Copyright (c) 2024 Balázs Scheidler <balazs.scheidler@axoflow.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,40 +21,27 @@
  * COPYING for details.
  *
  */
-#include "filterx/expr-literal.h"
 
-typedef struct _FilterXLiteral
-{
-  FilterXExpr super;
-  FilterXObject *object;
-} FilterXLiteral;
+#ifndef SYSLOG_NG_PERF_H_INCLUDED
+#define SYSLOG_NG_PERF_H_INCLUDED
 
-static FilterXObject *
-_eval_literal(FilterXExpr *s)
-{
-  FilterXLiteral *self = (FilterXLiteral *) s;
-  return filterx_object_ref(self->object);
-}
+#include "syslog-ng.h"
 
-static void
-_free(FilterXExpr *s)
-{
-  FilterXLiteral *self = (FilterXLiteral *) s;
-  filterx_object_unref(self->object);
-  filterx_expr_free_method(s);
-}
+#if SYSLOG_NG_ENABLE_PERF
 
-/* NOTE: takes the object reference */
-FilterXExpr *
-filterx_literal_new(FilterXObject *object)
-{
-  FilterXLiteral *self = g_new0(FilterXLiteral, 1);
+gpointer perf_generate_trampoline(gpointer target_address, const gchar *symbol_name);
 
-  filterx_expr_init_instance(&self->super, FILTERX_EXPR_TYPE_NAME(literal));
-  self->super.eval = _eval_literal;
-  self->super.free_fn = _free;
-  self->object = object;
-  return &self->super;
-}
+gboolean perf_is_enabled(void);
+gboolean perf_autodetect(void);
+gboolean perf_enable(void);
 
-FILTERX_EXPR_DEFINE_TYPE(literal);
+#else
+
+#define perf_generate_trampoline(addr, symbol) ({const gchar *__p G_GNUC_UNUSED = symbol; addr;})
+#define perf_is_enabled() FALSE
+#define perf_autodetect() FALSE
+#define perf_enable() FALSE
+
+#endif
+
+#endif

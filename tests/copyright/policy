@@ -271,6 +271,7 @@ tests/light/functional_tests/templates/test_template_stmt\.py
 tests/light/functional_tests/filters/test_multiple_filters\.py
 tests/light/functional_tests/filterx/test_filterx\.py
 tests/light/functional_tests/filterx/test_filterx_scope\.py
+tests/light/functional_tests/filterx/test_filterx_funcs\.py
 tests/light/functional_tests/filterx/test_filterx_update_metric\.py
 tests/light/functional_tests/parsers/metrics-probe/test_metrics_probe\.py
 tests/light/functional_tests/source_drivers/syslog_source/auto/test_auto_proto\.py

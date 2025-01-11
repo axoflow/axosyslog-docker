@@ -198,7 +198,7 @@ _eval_based_on_compare_mode(FilterXExpr *expr, gint compare_mode)
 }
 
 static FilterXObject *
-_eval(FilterXExpr *s)
+_eval_comparison(FilterXExpr *s)
 {
   FilterXComparison *self = (FilterXComparison *) s;
 
@@ -250,7 +250,7 @@ _optimize(FilterXExpr *s)
     self->literal_rhs = _eval_based_on_compare_mode(self->super.rhs, compare_mode);
 
   if (self->literal_lhs && self->literal_rhs)
-    return filterx_literal_new(_eval(&self->super.super));
+    return filterx_literal_new(_eval_comparison(&self->super.super));
 
   return NULL;
 }
@@ -273,7 +273,7 @@ filterx_comparison_new(FilterXExpr *lhs, FilterXExpr *rhs, gint operator)
 
   filterx_binary_op_init_instance(&self->super, "comparison", lhs, rhs);
   self->super.super.optimize = _optimize;
-  self->super.super.eval = _eval;
+  self->super.super.eval = _eval_comparison;
   self->super.super.free_fn = _filterx_comparison_free;
   self->operator = operator;
 
