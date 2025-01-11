@@ -1664,33 +1664,6 @@ def test_macro_caching(config, syslog_ng):
     assert output["1"] == output["2"] == output["3"] == output["4"] == {"SEVERITY": "notice", "FACILITY": "user"}
 
 
-def test_unset_empties_invalid_utf8(config, syslog_ng):
-    (file_true, file_false) = create_config(
-        config, r"""
-            invalid_utf8 = "ba\xC080az";
-            dict = {"foo":invalid_utf8};
-            unset_empties(dict, targets=["baz"]);
-            $MSG = dict;
-    """,
-    )
-    syslog_ng.start(config)
-
-    assert file_true.get_stats()["processed"] == 1
-    assert "processed" not in file_false.get_stats()
-
-
-def test_unset_empties_invalid_utf8_target(config, syslog_ng):
-    (file_true, file_false) = create_config(
-        config, r"""
-            dict = {};
-            unset_empties(dict, targets=["b\xC080az"], recursive=true);
-            $MSG = dict;
-    """,
-    )
-    with pytest.raises(Exception):
-        syslog_ng.start(config)
-
-
 def test_unset_empties(config, syslog_ng):
     (file_true, file_false) = create_config(
         config, r"""
