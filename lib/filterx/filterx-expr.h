@@ -56,8 +56,14 @@ struct _FilterXExpr
   FilterXExpr *(*optimize)(FilterXExpr *self);
   void (*free_fn)(FilterXExpr *self);
 
-  /* type of the expr */
+  /* type of the expr, is not freed, assumed to be managed by something else
+   * */
+
   const gchar *type;
+
+  /* name associated with the expr (e.g.  function name), is not freed by
+   * FilterXExpr, assumed to be managed by something else */
+  const gchar *name;
   CFG_LTYPE *lloc;
   gchar *expr_text;
 };

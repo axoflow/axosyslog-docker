@@ -109,12 +109,6 @@ _init(FilterXExpr *s, GlobalConfig *cfg)
   if (!filterx_expr_init(self->operand, cfg))
     return FALSE;
 
-  stats_lock();
-  StatsClusterKey sc_key;
-  stats_cluster_single_key_set(&sc_key, "fx_getattr_evals_total", NULL, 0);
-  stats_register_counter(STATS_LEVEL3, &sc_key, SC_TYPE_SINGLE_VALUE, &self->super.eval_count);
-  stats_unlock();
-
   return filterx_expr_init_method(s, cfg);
 }
 
@@ -122,12 +116,6 @@ static void
 _deinit(FilterXExpr *s, GlobalConfig *cfg)
 {
   FilterXGetAttr *self = (FilterXGetAttr *) s;
-
-  stats_lock();
-  StatsClusterKey sc_key;
-  stats_cluster_single_key_set(&sc_key, "fx_getattr_evals_total", NULL, 0);
-  stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->super.eval_count);
-  stats_unlock();
 
   filterx_expr_deinit(self->operand, cfg);
   filterx_expr_deinit_method(s, cfg);
@@ -159,6 +147,7 @@ filterx_getattr_new(FilterXExpr *operand, FilterXString *attr_name)
   self->operand = operand;
 
   self->attr = (FilterXObject *) attr_name;
-
+  /* NOTE: name borrows the string value from the string object */
+  self->super.name = filterx_string_get_value_ref(self->attr, NULL);
   return &self->super;
 }
