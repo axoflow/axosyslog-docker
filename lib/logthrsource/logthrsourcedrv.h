@@ -91,6 +91,8 @@ void log_threaded_source_driver_set_transport_name(LogThreadedSourceDriver *self
 void log_threaded_source_driver_init_instance(LogThreadedSourceDriver *self, GlobalConfig *cfg);
 gboolean log_threaded_source_driver_init_method(LogPipe *s);
 gboolean log_threaded_source_driver_deinit_method(LogPipe *s);
+gboolean log_threaded_source_driver_pre_config_init_method(LogPipe *s);
+gboolean log_threaded_source_driver_post_config_init_method(LogPipe *s);
 void log_threaded_source_driver_free_method(LogPipe *s);
 
 static inline void

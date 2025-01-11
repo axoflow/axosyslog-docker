@@ -248,11 +248,11 @@ _construct_worker(LogThreadedSourceDriver *self, gint worker_index)
 }
 
 gboolean
-log_threaded_source_driver_pre_config_init(LogPipe *s)
+log_threaded_source_driver_pre_config_init_method(LogPipe *s)
 {
   LogThreadedSourceDriver *self = (LogThreadedSourceDriver *) s;
   main_loop_worker_allocate_thread_space(self->num_workers);
-  return TRUE;
+  return log_pipe_pre_config_init_method(s);
 }
 
 static void
@@ -352,14 +352,23 @@ log_threaded_source_driver_free_method(LogPipe *s)
 }
 
 gboolean
-log_threaded_source_driver_start_workers(LogPipe *s)
+log_threaded_source_driver_start_workers(LogThreadedSourceDriver *self)
 {
-  LogThreadedSourceDriver *self = (LogThreadedSourceDriver *) s;
-
   for (size_t i = 0; i < self->num_workers; i++)
     g_assert(main_loop_threaded_worker_start(&self->workers[i]->thread));
 
   return TRUE;
+}
+
+gboolean
+log_threaded_source_driver_post_config_init_method(LogPipe *s)
+{
+  LogThreadedSourceDriver *self = (LogThreadedSourceDriver *) s;
+
+  if (!log_threaded_source_driver_start_workers(self))
+    return FALSE;
+
+  return log_pipe_post_config_init_method(s);
 }
 
 static gboolean
@@ -469,8 +478,8 @@ log_threaded_source_driver_init_instance(LogThreadedSourceDriver *self, GlobalCo
   self->super.super.super.init = log_threaded_source_driver_init_method;
   self->super.super.super.deinit = log_threaded_source_driver_deinit_method;
   self->super.super.super.free_fn = log_threaded_source_driver_free_method;
-  self->super.super.super.pre_config_init = log_threaded_source_driver_pre_config_init;
-  self->super.super.super.post_config_init = log_threaded_source_driver_start_workers;
+  self->super.super.super.pre_config_init = log_threaded_source_driver_pre_config_init_method;
+  self->super.super.super.post_config_init = log_threaded_source_driver_post_config_init_method;
 
   self->worker_construct = _construct_worker;
 
