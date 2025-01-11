@@ -414,7 +414,7 @@ static gboolean
 afinter_sd_pre_config_init(LogPipe *s)
 {
   main_loop_worker_allocate_thread_space(1);
-  return TRUE;
+  return log_pipe_pre_config_init_method(s);
 }
 
 static gboolean
@@ -459,7 +459,10 @@ afinter_sd_post_config_init(LogPipe *s)
 {
   AFInterSourceDriver *self = (AFInterSourceDriver *) s;
 
-  return afinter_source_start_thread(self->source);
+  if (!afinter_source_start_thread(self->source))
+    return FALSE;
+
+  return log_pipe_post_config_init_method(s);
 }
 
 static gboolean

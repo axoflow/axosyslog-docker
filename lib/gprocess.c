@@ -27,6 +27,7 @@
 #include "messages.h"
 #include "reloc.h"
 #include "console.h"
+#include "perf/perf.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -126,6 +127,7 @@ static struct
   const gchar *cwd;
   const gchar *caps;
   gboolean enable_caps;
+  gboolean enable_perf;
   gint  argc;
   gchar **argv;
   gchar *argv_start;
@@ -716,6 +718,16 @@ g_process_enable_core(void)
       if (setrlimit(RLIMIT_CORE, &limit) < 0)
         console_printf("Error setting core limit to infinity; error='%s'", g_strerror(errno));
 
+    }
+}
+
+static void
+g_process_enable_perf(void)
+{
+  if (process_opts.enable_perf || perf_autodetect())
+    {
+      if (!perf_enable())
+        console_printf("Error enabling Linux perf profiling support, maybe not compiled in using --enable-perf?");
     }
 }
 
@@ -1425,6 +1437,7 @@ g_process_start(void)
     }
   g_process_enable_core();
   g_process_change_dir();
+  g_process_enable_perf();
 }
 
 
@@ -1554,7 +1567,8 @@ static GOptionEntry g_process_option_entries[] =
   { "no-caps",        0,  G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, g_process_process_no_caps,       "Disable managing Linux capabilities", NULL },
   { "pidfile",      'p',                     0, G_OPTION_ARG_STRING,   &process_opts.pidfile,           "Set path to pid file", "<pidfile>" },
   { "enable-core",    0,                     0, G_OPTION_ARG_NONE,     &process_opts.core,              "Enable dumping core files", NULL },
-  { "fd-limit",       0,                  0, G_OPTION_ARG_INT,      &process_opts.fd_limit_min,         "The minimum required number of fds", NULL },
+  { "fd-limit",       0,                     0, G_OPTION_ARG_INT,      &process_opts.fd_limit_min,      "The minimum required number of fds", NULL },
+  { "perf-profiling", 0,                     0, G_OPTION_ARG_NONE,     &process_opts.enable_perf,       "Enable Linux perf based profiling", NULL },
   { NULL, 0, 0, 0, NULL, NULL, NULL },
 };
 

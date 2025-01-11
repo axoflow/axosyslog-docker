@@ -226,9 +226,13 @@ _extract_source_from_file_location(GString *result, const gchar *filename, const
 }
 
 static gboolean
-_extract_source_from_buffer_location(GString *result, const gchar *buffer_content, const CFG_LTYPE *yylloc)
+_extract_source_from_buffer_location(GString *result, CfgIncludeLevel *level, const CFG_LTYPE *yylloc)
 {
-  gchar **lines = g_strsplit(buffer_content, "\n", yylloc->last_line + 1);
+  const gchar *buffer_content = level->buffer.original_content;
+  gchar **lines = level->buffer.original_lines;
+
+  if (!lines)
+    lines = level->buffer.original_lines = g_strsplit(buffer_content, "\n", 0);
   gint num_lines = g_strv_length(lines);
 
   if (num_lines <= yylloc->first_line)
@@ -262,7 +266,6 @@ _extract_source_from_buffer_location(GString *result, const gchar *buffer_conten
     }
 
 exit:
-  g_strfreev(lines);
   return TRUE;
 }
 
@@ -279,7 +282,7 @@ cfg_source_extract_source_text(CfgLexer *lexer, const CFG_LTYPE *yylloc, GString
       CFG_LTYPE buf_lloc = *yylloc;
       cfg_lexer_undo_set_file_location(lexer, &buf_lloc);
 
-      return _extract_source_from_buffer_location(result, level->buffer.original_content, &buf_lloc);
+      return _extract_source_from_buffer_location(result, level, &buf_lloc);
     }
   else
     g_assert_not_reached();

@@ -306,10 +306,12 @@ void log_threaded_dest_driver_insert_msg_length_stats(LogThreadedDestDriver *sel
 void log_threaded_dest_driver_insert_batch_length_stats(LogThreadedDestDriver *self, gsize len);
 void log_threaded_dest_driver_register_aggregated_stats(LogThreadedDestDriver *self);
 void log_threaded_dest_driver_unregister_aggregated_stats(LogThreadedDestDriver *self);
+gboolean log_threaded_dest_driver_start_workers(LogThreadedDestDriver *self);
 
 gboolean log_threaded_dest_driver_deinit_method(LogPipe *s);
 gboolean log_threaded_dest_driver_init_method(LogPipe *s);
-gboolean log_threaded_dest_driver_start_workers(LogPipe *s);
+gboolean log_threaded_dest_driver_pre_config_init_method(LogPipe *s);
+gboolean log_threaded_dest_driver_post_config_init_method(LogPipe *s);
 
 void log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig *cfg);
 void log_threaded_dest_driver_free(LogPipe *s);

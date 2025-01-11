@@ -25,6 +25,7 @@
 #include "logpipe.h"
 #include "cfg-tree.h"
 #include "cfg-walker.h"
+#include "perf/perf.h"
 
 gboolean (*pipe_single_step_hook)(LogPipe *pipe, LogMessage *msg, const LogPathOptions *path_options);
 
@@ -146,6 +147,24 @@ log_pipe_clone_method(LogPipe *dst, const LogPipe *src)
   log_pipe_set_options(dst, &src->options);
 }
 
+gboolean
+log_pipe_pre_config_init_method(LogPipe *self)
+{
+  return TRUE;
+}
+
+gboolean
+log_pipe_post_config_init_method(LogPipe *self)
+{
+  if ((self->flags & PIF_CONFIG_RELATED) && perf_is_enabled())
+    {
+      gchar buf[256];
+
+      self->queue = perf_generate_trampoline(self->queue, log_expr_node_format_location(self->expr_node, buf, sizeof(buf)));
+    }
+  return TRUE;
+}
+
 void
 log_pipe_init_instance(LogPipe *self, GlobalConfig *cfg)
 {
@@ -154,7 +173,8 @@ log_pipe_init_instance(LogPipe *self, GlobalConfig *cfg)
   self->pipe_next = NULL;
   self->persist_name = NULL;
   self->plugin_name = NULL;
-
+  self->pre_config_init = log_pipe_pre_config_init_method;
+  self->post_config_init = log_pipe_post_config_init_method;
   self->queue = log_pipe_forward_msg;
   self->free_fn = log_pipe_free_method;
   self->arcs = _arcs;
