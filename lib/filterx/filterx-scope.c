@@ -30,6 +30,8 @@ struct _FilterXScope
   guint32 generation:20, write_protected, dirty, syncable, log_msg_has_changes;
 };
 
+volatile gint filterx_scope_variables_max = 16;
+
 static gboolean
 _lookup_variable(FilterXScope *self, FilterXVariableHandle handle, FilterXVariable **v_slot)
 {
@@ -268,7 +270,7 @@ filterx_scope_new(void)
   FilterXScope *self = g_new0(FilterXScope, 1);
 
   g_atomic_counter_set(&self->ref_cnt, 1);
-  self->variables = g_array_sized_new(FALSE, TRUE, sizeof(FilterXVariable), 16);
+  self->variables = g_array_sized_new(FALSE, TRUE, sizeof(FilterXVariable), filterx_scope_variables_max);
   g_array_set_clear_func(self->variables, (GDestroyNotify) filterx_variable_clear);
   return self;
 }
@@ -338,6 +340,11 @@ filterx_scope_make_writable(FilterXScope **pself)
 static void
 _free(FilterXScope *self)
 {
+  /* NOTE: update the number of inlined variable allocations */
+  gint variables_max = filterx_scope_variables_max;
+  if (variables_max < self->variables->len)
+    filterx_scope_variables_max = self->variables->len;
+
   g_array_free(self->variables, TRUE);
   g_free(self);
 }
