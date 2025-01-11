@@ -26,6 +26,7 @@
 #include "filterx-object.h"
 
 typedef struct _FilterXString FilterXString;
+typedef void (*FilterXStringTranslateFunc)(gchar *target, const gchar *source, gsize source_len);
 
 FILTERX_DECLARE_TYPE(string);
 FILTERX_DECLARE_TYPE(bytes);
@@ -39,6 +40,7 @@ FilterXObject *filterx_typecast_bytes(FilterXExpr *s, FilterXObject *args[], gsi
 FilterXObject *filterx_typecast_protobuf(FilterXExpr *s, FilterXObject *args[], gsize args_len);
 
 FilterXObject *filterx_string_new(const gchar *str, gssize str_len);
+FilterXObject *filterx_string_new_translated(const gchar *str, gssize str_len, FilterXStringTranslateFunc translate);
 FilterXObject *filterx_bytes_new(const gchar *str, gssize str_len);
 FilterXObject *filterx_protobuf_new(const gchar *str, gssize str_len);
 
