@@ -393,6 +393,7 @@ cfg_lexer_init_include_level_buffer(CfgLexer *self, CfgIncludeLevel *level,
   level->buffer.content = lexer_buffer;
   level->buffer.content_length = lexer_buffer_len;
   level->buffer.original_content = g_strdup(lexer_buffer);
+  level->buffer.original_lines = NULL;
 }
 
 gboolean
@@ -458,6 +459,7 @@ cfg_lexer_include_level_clear(CfgLexer *self, CfgIncludeLevel *level)
     {
       g_free(level->buffer.content);
       g_free(level->buffer.original_content);
+      g_strfreev(level->buffer.original_lines);
     }
   memset(level, 0, sizeof(*level));
 }
