@@ -67,7 +67,7 @@ _extract_args(FilterXFunctionIsSdataFromEnteprise *self, FilterXFunctionArgs *ar
 }
 
 static FilterXObject *
-_eval(FilterXExpr *s)
+_eval_fx_is_sdata_from(FilterXExpr *s)
 {
   FilterXFunctionIsSdataFromEnteprise *self = (FilterXFunctionIsSdataFromEnteprise *) s;
 
@@ -105,7 +105,7 @@ filterx_function_is_sdata_from_enterprise_new(FilterXFunctionArgs *args, GError 
 
   if (!_extract_args(self, args, error) || !filterx_function_args_check(args, error))
     goto error;
-  self->super.super.eval = _eval;
+  self->super.super.eval = _eval_fx_is_sdata_from;
   self->super.super.free_fn = _free;
   filterx_function_args_free(args);
   return &self->super.super;

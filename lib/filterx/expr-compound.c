@@ -107,7 +107,7 @@ _eval_exprs(FilterXCompoundExpr *self, FilterXObject **result)
 }
 
 static FilterXObject *
-_eval(FilterXExpr *s)
+_eval_compound(FilterXExpr *s)
 {
   FilterXCompoundExpr *self = (FilterXCompoundExpr *) s;
   FilterXObject *result = NULL;
@@ -231,8 +231,8 @@ filterx_compound_expr_new(gboolean return_value_of_last_expr)
 {
   FilterXCompoundExpr *self = g_new0(FilterXCompoundExpr, 1);
 
-  filterx_expr_init_instance(&self->super);
-  self->super.eval = _eval;
+  filterx_expr_init_instance(&self->super, "compound");
+  self->super.eval = _eval_compound;
   self->super.optimize = _optimize;
   self->super.init = _init;
   self->super.deinit = _deinit;

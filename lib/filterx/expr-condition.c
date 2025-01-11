@@ -98,7 +98,7 @@ _free(FilterXExpr *s)
 }
 
 static FilterXObject *
-_eval(FilterXExpr *s)
+_eval_conditional(FilterXExpr *s)
 {
   FilterXConditional *self = (FilterXConditional *) s;
   FilterXObject *condition_value = filterx_expr_eval(self->condition);
@@ -212,8 +212,8 @@ FilterXExpr *
 filterx_conditional_new(FilterXExpr *condition)
 {
   FilterXConditional *self = g_new0(FilterXConditional, 1);
-  filterx_expr_init_instance(&self->super);
-  self->super.eval = _eval;
+  filterx_expr_init_instance(&self->super, "conditional");
+  self->super.eval = _eval_conditional;
   self->super.optimize = _optimize;
   self->super.init = _init;
   self->super.deinit = _deinit;
@@ -227,7 +227,7 @@ FilterXExpr *
 filterx_conditional_find_tail(FilterXExpr *s)
 {
   /* check if this is a FilterXConditional instance */
-  if (s->eval != _eval)
+  if (s->eval != _eval_conditional)
     return NULL;
 
   FilterXConditional *self = (FilterXConditional *) s;

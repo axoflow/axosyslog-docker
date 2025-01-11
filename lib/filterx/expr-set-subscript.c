@@ -218,12 +218,12 @@ _free(FilterXExpr *s)
 }
 
 FilterXExpr *
-filterx_nullv_set_subscript_new(FilterXExpr *object, FilterXExpr *key, FilterXExpr *new_value)
+filterx_set_subscript_new(FilterXExpr *object, FilterXExpr *key, FilterXExpr *new_value)
 {
   FilterXSetSubscript *self = g_new0(FilterXSetSubscript, 1);
 
-  filterx_expr_init_instance(&self->super);
-  self->super.eval = _nullv_set_subscript_eval;
+  filterx_expr_init_instance(&self->super, "set_subscript");
+  self->super.eval = _set_subscript_eval;
   self->super.optimize = _optimize;
   self->super.init = _init;
   self->super.deinit = _deinit;
@@ -236,19 +236,11 @@ filterx_nullv_set_subscript_new(FilterXExpr *object, FilterXExpr *key, FilterXEx
 }
 
 FilterXExpr *
-filterx_set_subscript_new(FilterXExpr *object, FilterXExpr *key, FilterXExpr *new_value)
+filterx_nullv_set_subscript_new(FilterXExpr *object, FilterXExpr *key, FilterXExpr *new_value)
 {
-  FilterXSetSubscript *self = g_new0(FilterXSetSubscript, 1);
+  FilterXExpr *self = filterx_set_subscript_new(object, key, new_value);
 
-  filterx_expr_init_instance(&self->super);
-  self->super.eval = _set_subscript_eval;
-  self->super.optimize = _optimize;
-  self->super.init = _init;
-  self->super.deinit = _deinit;
-  self->super.free_fn = _free;
-  self->object = object;
-  self->key = key;
-  self->new_value = new_value;
-  self->super.ignore_falsy_result = TRUE;
-  return &self->super;
+  self->type = "nullv_set_subscript";
+  self->eval = _nullv_set_subscript_eval;
+  return self;
 }

@@ -168,7 +168,7 @@ filterx_dummy_error_new(const gchar *msg)
 {
   FilterXDummyError *self = g_new0(FilterXDummyError, 1);
   self->msg = g_strdup(msg);
-  filterx_expr_init_instance(&self->super);
+  filterx_expr_init_instance(&self->super, "dummy");
   self->super.eval = _eval;
   self->super.free_fn = _free;
   return &self->super;

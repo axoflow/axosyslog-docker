@@ -37,7 +37,7 @@ struct _FilterXNullCoalesce
 };
 
 static FilterXObject *
-_eval(FilterXExpr *s)
+_eval_null_coalesce(FilterXExpr *s)
 {
   FilterXNullCoalesce *self = (FilterXNullCoalesce *) s;
 
@@ -86,7 +86,7 @@ filterx_null_coalesce_new(FilterXExpr *lhs, FilterXExpr *rhs)
 {
   FilterXNullCoalesce *self = g_new0(FilterXNullCoalesce, 1);
   filterx_binary_op_init_instance(&self->super, "null_coalesce", lhs, rhs);
-  self->super.super.eval = _eval;
+  self->super.super.eval = _eval_null_coalesce;
   self->super.super.optimize = _optimize;
   return &self->super.super;
 }
