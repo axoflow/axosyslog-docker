@@ -26,6 +26,7 @@
 #include "logmpx.h"
 #include "logpipe.h"
 #include "metrics-pipe.h"
+#include "cfg-source.h"
 
 #include <string.h>
 
@@ -282,6 +283,14 @@ log_expr_node_new(gint layout, gint content, const gchar *name, LogExprNode *chi
       self->line = yylloc->first_line;
       self->column = yylloc->first_column;
     }
+  if (yylloc && (debug_flag || 1))
+    {
+      CFG_LTYPE lloc = *yylloc;
+      lloc.last_column = 255;
+      GString *text = g_string_new("");
+      cfg_source_extract_source_text(configuration->lexer, &lloc, text);
+      self->expr_text = g_string_free(text, FALSE);
+    }
   return self;
 }
 
@@ -308,6 +317,7 @@ _log_expr_node_free(LogExprNode *self)
     self->aux_destroy(self->aux);
   g_free(self->name);
   g_free(self->filename);
+  g_free(self->expr_text);
   g_free(self);
 }
 

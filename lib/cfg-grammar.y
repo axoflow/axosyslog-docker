@@ -567,14 +567,14 @@ expr_stmt
 source_stmt
         : KW_SOURCE string '{' source_content '}'
           {
-            $$ = log_expr_node_new_source($2, $4, &@1);
+            $$ = log_expr_node_new_source($2, $4, &@$);
             free($2);
           }
 	;
 dest_stmt
        : KW_DESTINATION string '{' dest_content '}'
           {
-            $$ = log_expr_node_new_destination($2, $4, &@1);
+            $$ = log_expr_node_new_destination($2, $4, &@$);
             free($2);
           }
 	;
