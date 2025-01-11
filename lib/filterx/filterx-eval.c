@@ -119,10 +119,8 @@ filterx_format_last_error_location(void)
 }
 
 FilterXEvalResult
-filterx_eval_exec(FilterXEvalContext *context, FilterXExpr *expr, LogMessage *msg)
+filterx_eval_exec(FilterXEvalContext *context, FilterXExpr *expr)
 {
-  context->msgs = &msg;
-  context->num_msg = 1;
   FilterXEvalResult result = FXE_FAILURE;
 
   FilterXObject *res = filterx_expr_eval(expr);
@@ -147,7 +145,7 @@ fail:
 }
 
 void
-filterx_eval_init_context(FilterXEvalContext *context, FilterXEvalContext *previous_context)
+filterx_eval_init_context(FilterXEvalContext *context, FilterXEvalContext *previous_context, LogMessage *msg)
 {
   FilterXScope *scope;
 
@@ -158,6 +156,7 @@ filterx_eval_init_context(FilterXEvalContext *context, FilterXEvalContext *previ
   filterx_scope_make_writable(&scope);
 
   memset(context, 0, sizeof(*context));
+  context->msg = msg;
   context->template_eval_options = DEFAULT_TEMPLATE_EVAL_OPTIONS;
   context->scope = scope;
 

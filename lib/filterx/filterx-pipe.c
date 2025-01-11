@@ -68,7 +68,7 @@ log_filterx_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_o
   FilterXEvalResult eval_res;
 
   path_options = log_path_options_chain(&local_path_options, path_options);
-  filterx_eval_init_context(&eval_context, path_options->filterx_context);
+  filterx_eval_init_context(&eval_context, path_options->filterx_context, msg);
 
   if (filterx_scope_has_log_msg_changes(eval_context.scope))
     filterx_scope_invalidate_log_msg_cache(eval_context.scope);
@@ -79,7 +79,7 @@ log_filterx_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_o
             evt_tag_msg_reference(msg));
 
   NVTable *payload = nv_table_ref(msg->payload);
-  eval_res = filterx_eval_exec(&eval_context, self->block, msg);
+  eval_res = filterx_eval_exec(&eval_context, self->block);
 
   msg_trace("<<<<<< filterx rule evaluation result",
             filterx_format_eval_result(eval_res),

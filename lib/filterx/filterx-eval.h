@@ -47,8 +47,7 @@ typedef enum _FilterXEvalControl
 typedef struct _FilterXEvalContext FilterXEvalContext;
 struct _FilterXEvalContext
 {
-  LogMessage **msgs;
-  gint num_msg;
+  LogMessage *msg;
   FilterXScope *scope;
   FilterXError error;
   LogTemplateEvalOptions template_eval_options;
@@ -62,14 +61,14 @@ FilterXScope *filterx_eval_get_scope(void);
 void filterx_eval_push_error(const gchar *message, FilterXExpr *expr, FilterXObject *object);
 void filterx_eval_push_error_info(const gchar *message, FilterXExpr *expr, gchar *info, gboolean free_info);
 void filterx_eval_set_context(FilterXEvalContext *context);
-FilterXEvalResult filterx_eval_exec(FilterXEvalContext *context, FilterXExpr *expr, LogMessage *msg);
+FilterXEvalResult filterx_eval_exec(FilterXEvalContext *context, FilterXExpr *expr);
 const gchar *filterx_eval_get_last_error(void);
 EVTTAG *filterx_format_last_error(void);
 EVTTAG *filterx_format_last_error_location(void);
 void filterx_eval_clear_errors(void);
 EVTTAG *filterx_format_eval_result(FilterXEvalResult result);
 
-void filterx_eval_init_context(FilterXEvalContext *context, FilterXEvalContext *previous_context);
+void filterx_eval_init_context(FilterXEvalContext *context, FilterXEvalContext *previous_context, LogMessage *msg);
 void filterx_eval_deinit_context(FilterXEvalContext *context);
 
 static inline void
