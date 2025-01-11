@@ -593,6 +593,7 @@ log_msg_set_value_with_type(LogMessage *self, NVHandle handle,
   if (value_len < 0)
     value_len = strlen(value);
 
+  self->generation++;
   if (_log_name_value_updates(self))
     {
       msg_trace("Setting value",
@@ -651,6 +652,7 @@ log_msg_unset_value(LogMessage *self, NVHandle handle)
 {
   g_assert(!log_msg_is_write_protected(self));
 
+  self->generation++;
   if (_log_name_value_updates(self))
     {
       msg_trace("Unsetting value",
@@ -712,6 +714,7 @@ log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle,
   name_len = 0;
   name = log_msg_get_value_name(handle, &name_len);
 
+  self->generation++;
   if (_log_name_value_updates(self))
     {
       msg_trace("Setting indirect value",
@@ -951,6 +954,7 @@ log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on)
 
   g_assert(!log_msg_is_write_protected(self));
 
+  self->generation++;
   msg_trace("Setting tag",
             evt_tag_str("name", log_tags_get_by_id(id)),
             evt_tag_int("value", on),
@@ -1358,6 +1362,7 @@ log_msg_clear(LogMessage *self)
 {
   g_assert(!log_msg_is_write_protected(self));
 
+  self->generation++;
   if(log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
     nv_table_unref(self->payload);
   self->payload = nv_table_new(LM_V_MAX, 16, 256);
