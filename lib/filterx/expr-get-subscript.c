@@ -129,12 +129,6 @@ _init(FilterXExpr *s, GlobalConfig *cfg)
       return FALSE;
     }
 
-  stats_lock();
-  StatsClusterKey sc_key;
-  stats_cluster_single_key_set(&sc_key, "fx_get_subscript_evals_total", NULL, 0);
-  stats_register_counter(STATS_LEVEL3, &sc_key, SC_TYPE_SINGLE_VALUE, &self->super.eval_count);
-  stats_unlock();
-
   return filterx_expr_init_method(s, cfg);
 }
 
@@ -142,12 +136,6 @@ static void
 _deinit(FilterXExpr *s, GlobalConfig *cfg)
 {
   FilterXGetSubscript *self = (FilterXGetSubscript *) s;
-
-  stats_lock();
-  StatsClusterKey sc_key;
-  stats_cluster_single_key_set(&sc_key, "fx_get_subscript_evals_total", NULL, 0);
-  stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->super.eval_count);
-  stats_unlock();
 
   filterx_expr_deinit(self->operand, cfg);
   filterx_expr_deinit(self->key, cfg);
@@ -169,7 +157,7 @@ filterx_get_subscript_new(FilterXExpr *operand, FilterXExpr *key)
 {
   FilterXGetSubscript *self = g_new0(FilterXGetSubscript, 1);
 
-  filterx_expr_init_instance(&self->super);
+  filterx_expr_init_instance(&self->super, "get_subscript");
   self->super.eval = _eval;
   self->super.is_set = _isset;
   self->super.unset = _unset;
