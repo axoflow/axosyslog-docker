@@ -56,6 +56,7 @@ struct _FilterXExpr
   FilterXExpr *(*optimize)(FilterXExpr *self);
   void (*free_fn)(FilterXExpr *self);
 
+  /* type of the expr */
   const gchar *type;
   CFG_LTYPE *lloc;
   gchar *expr_text;
@@ -151,7 +152,7 @@ void filterx_expr_set_location(FilterXExpr *self, CfgLexer *lexer, CFG_LTYPE *ll
 void filterx_expr_set_location_with_text(FilterXExpr *self, CFG_LTYPE *lloc, const gchar *text);
 EVTTAG *filterx_expr_format_location_tag(FilterXExpr *self);
 FilterXExpr *filterx_expr_optimize(FilterXExpr *self);
-void filterx_expr_init_instance(FilterXExpr *self);
+void filterx_expr_init_instance(FilterXExpr *self, const gchar *type);
 FilterXExpr *filterx_expr_new(void);
 FilterXExpr *filterx_expr_ref(FilterXExpr *self);
 void filterx_expr_unref(FilterXExpr *self);
@@ -190,7 +191,6 @@ typedef struct _FilterXUnaryOp
 {
   FilterXExpr super;
   FilterXExpr *operand;
-  const gchar *name;
 } FilterXUnaryOp;
 
 FilterXExpr *filterx_unary_op_optimize_method(FilterXExpr *s);
@@ -203,7 +203,6 @@ typedef struct _FilterXBinaryOp
 {
   FilterXExpr super;
   FilterXExpr *lhs, *rhs;
-  const gchar *name;
 } FilterXBinaryOp;
 
 FilterXExpr *filterx_binary_op_optimize_method(FilterXExpr *s);

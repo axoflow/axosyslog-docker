@@ -222,7 +222,7 @@ filterx_nullv_set_subscript_new(FilterXExpr *object, FilterXExpr *key, FilterXEx
 {
   FilterXSetSubscript *self = g_new0(FilterXSetSubscript, 1);
 
-  filterx_expr_init_instance(&self->super);
+  filterx_expr_init_instance(&self->super, "nullv_set_subscript");
   self->super.eval = _nullv_set_subscript_eval;
   self->super.optimize = _optimize;
   self->super.init = _init;
@@ -240,7 +240,7 @@ filterx_set_subscript_new(FilterXExpr *object, FilterXExpr *key, FilterXExpr *ne
 {
   FilterXSetSubscript *self = g_new0(FilterXSetSubscript, 1);
 
-  filterx_expr_init_instance(&self->super);
+  filterx_expr_init_instance(&self->super, "set_subscript");
   self->super.eval = _set_subscript_eval;
   self->super.optimize = _optimize;
   self->super.init = _init;

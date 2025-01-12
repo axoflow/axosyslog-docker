@@ -349,6 +349,8 @@ extern gboolean (*pipe_single_step_hook)(LogPipe *pipe, LogMessage *msg, const L
 LogPipe *log_pipe_ref(LogPipe *self);
 gboolean log_pipe_unref(LogPipe *self);
 LogPipe *log_pipe_new(GlobalConfig *cfg);
+gboolean log_pipe_pre_config_init_method(LogPipe *self);
+gboolean log_pipe_post_config_init_method(LogPipe *self);
 void log_pipe_init_instance(LogPipe *self, GlobalConfig *cfg);
 void log_pipe_clone_method(LogPipe *dst, const LogPipe *src);
 void log_pipe_forward_notify(LogPipe *self, gint notify_code, gpointer user_data);

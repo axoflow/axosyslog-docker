@@ -59,6 +59,7 @@ cmake/.*$
 tests/light/pytest.ini
 tests/light/tox.ini
 tests/light/.pre-commit-config.yaml
+tests/light/reports
 .github/workflows/.*$
 lib/logmsg/tests/messages/syslog-ng-(pe-)?[.0-9]*-msg.h$
 modules/python-modules/requirements\.lock
@@ -138,6 +139,7 @@ lib/filterx/.*\.[ch]
 lib/filterx/filterx-grammar\.ym
 lib/logproto/logproto-auto-server\.[ch]
 lib/transport/tests/test_transport\.c
+lib/perf/.*\.[chS]
 
 ###########################################################################
 # These tests are GPLd even though they reside under lib/ and are excluded

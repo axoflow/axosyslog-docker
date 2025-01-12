@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2024 Axoflow
- * Copyright (c) 2024 Szilard Parrag <szilard.parrag@axoflow.com>
+ * Copyright (c) 2024 Balázs Scheidler <balazs.scheidler@axoflow.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,26 +22,26 @@
  *
  */
 
+#ifndef SYSLOG_NG_PERF_H_INCLUDED
+#define SYSLOG_NG_PERF_H_INCLUDED
 
-#include "filterx/expr-done.h"
-#include "filterx/filterx-eval.h"
-#include "filterx/object-primitive.h"
+#include "syslog-ng.h"
 
-static FilterXObject *
-_eval(FilterXExpr *s)
-{
-  FilterXEvalContext *context = filterx_eval_get_context();
-  context->eval_control_modifier = FXC_DONE;
+#if SYSLOG_NG_ENABLE_PERF
 
-  return filterx_boolean_new(TRUE);
-}
+gpointer perf_generate_trampoline(gpointer target_address, const gchar *symbol_name);
 
-FilterXExpr *
-filterx_expr_done(void)
-{
-  FilterXExpr *self = g_new0(FilterXExpr, 1);
-  filterx_expr_init_instance(self, "done");
-  self->eval = _eval;
+gboolean perf_is_enabled(void);
+gboolean perf_autodetect(void);
+gboolean perf_enable(void);
 
-  return self;
-}
+#else
+
+#define perf_generate_trampoline(addr, symbol) ({const gchar *__p G_GNUC_UNUSED = symbol; addr;})
+#define perf_is_enabled() FALSE
+#define perf_autodetect() FALSE
+#define perf_enable() FALSE
+
+#endif
+
+#endif
