@@ -59,6 +59,7 @@ cmake/.*$
 tests/light/pytest.ini
 tests/light/tox.ini
 tests/light/.pre-commit-config.yaml
+tests/light/reports
 .github/workflows/.*$
 lib/logmsg/tests/messages/syslog-ng-(pe-)?[.0-9]*-msg.h$
 modules/python-modules/requirements\.lock
