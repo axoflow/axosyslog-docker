@@ -154,17 +154,26 @@ jobs:
       - id: docker-metadata-tags
         name: Extract metadata (AxoSyslog version) for Docker
         run: |
-          last_full_version=$(skopeo inspect docker://ghcr.io/axoflow/axosyslog:latest | jq '.RepoTags' | sed 's/ \|"\|,//g' | grep "^[0-9]*.[0-9]*.[0-9]*$\|^[0-9]*.[0-9]*.[0-9]*-[0-9]*$" | tail -n 1)
-          if [[ $last_full_version == *"-"* ]]; then
-              last_version=$(echo $last_full_version | cut -d"-" -f1)
-              last_patch_level=$(echo $last_full_version | cut -d"-" -f2)
-              next_patch_level=$((last_patch_level + 1))
+          previous_docker_tag=$(skopeo inspect docker://ghcr.io/axoflow/axosyslog:latest | jq '.RepoTags' | sed 's/ \|"\|,//g' | grep "^[0-9]*.[0-9]*.[0-9]*$\|^[0-9]*.[0-9]*.[0-9]*-[0-9]*$" | tail -n 1)
+          previous_docker_tag_short=$(echo $previous_docker_tag | cut -d"-" -f1)
+          previous_docker_tag_patch=$(echo $previous_docker_tag | cut -d"-" -f2)
+          current_git_tag=${{ github.ref }}
+          function version { echo "$@" | awk -F. '{ printf("%d%03d%03d\n", $1,$2,$3); }'; }
+          if [ $(version $current_git_tag) -gt $(version $previous_docker_tag_short) ]; then
+              echo "Given git tag version is greater than previous docker tag version: $current_git_tag > $previous_docker_tag_short"
+              next_docker_tag=$current_git_tag-1
+              echo "Next docker version tag: $next_docker_tag"
+          elif [ $(version $current_git_tag) -eq $(version $previous_docker_tag_short) ]; then
+              echo "Given git tag version is equals with previous docker tag version: $current_git_tag == $previous_docker_tag_short"
+              next_docker_tag_patch=$((previous_docker_tag_patch+1))
+              next_docker_tag=$previous_docker_tag_short-$next_docker_tag_patch
+              echo "Next docker version tag: $next_docker_tag"
           else
-              last_version=$(echo $last_full_version | cut -d"-" -f1)
-              next_patch_level=1
+              echo "Given git tag version is less than previous docker tag version: $current_git_tag < $previous_docker_tag_short"
+              echo "This is not allowed. Please provide a valid git tag version."
+              exit 1
           fi
-          next_full_version="$last_version-$next_patch_level"
-          TAGS="ghcr.io/mitzkia/axosyslog:$last_version,ghcr.io/mitzkia/axosyslog:$next_full_version,ghcr.io/mitzkia/axosyslog:latest"
+          TAGS="ghcr.io/mitzkia/axosyslog:$last_version,ghcr.io/mitzkia/axosyslog:$next_docker_tag,ghcr.io/mitzkia/axosyslog:latest"
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
 
       - name: Compose Docker image tags
