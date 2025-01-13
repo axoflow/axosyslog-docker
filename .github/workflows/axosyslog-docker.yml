@@ -11,7 +11,7 @@ on:
       platforms:
         required: false
         type: string
-        default: linux/amd64,linux/arm64,linux/arm/v7
+        default: linux/amd64
       snapshot-tarball-artifact:
         required: false
         type: string
@@ -48,7 +48,7 @@ jobs:
 
 
   image-build:
-    if: github.repository_owner == 'axoflow' || github.event_name != 'schedule'
+    if: github.event_name != 'schedule'
     runs-on: ${{ matrix.platform == 'linux/arm64' && 'linux-arm64' || 'ubuntu-latest' }}
     needs: prepare
 
@@ -138,6 +138,8 @@ jobs:
   merge-and-push:
     runs-on: ubuntu-latest
     needs: [prepare, image-build]
+    outputs:
+      tags: ${{ steps.docker-metadata-tags.outputs.tags }}
     steps:
       - name: Download digests
         uses: actions/download-artifact@v4
@@ -149,13 +151,30 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Extract metadata (AxoSyslog version) for Docker
-        id: docker-metadata-tags
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ needs.prepare.outputs.image-name }}
-          tags: type=match,pattern=axosyslog-([0-9].*),group=1
-          sep-tags: ','
+      - id: docker-metadata-tags
+        name: Extract metadata (AxoSyslog version) for Docker
+        run: |
+          previous_docker_tag=$(skopeo inspect docker://ghcr.io/axoflow/axosyslog:latest | jq '.RepoTags' | sed 's/ \|"\|,//g' | grep "^[0-9]*.[0-9]*.[0-9]*$\|^[0-9]*.[0-9]*.[0-9]*-[0-9]*$" | tail -n 1)
+          previous_docker_tag_short=$(echo $previous_docker_tag | cut -d"-" -f1)
+          previous_docker_tag_patch=$(echo $previous_docker_tag | cut -d"-" -f2)
+          current_git_tag=${{ github.ref }}
+          function version { echo "$@" | awk -F. '{ printf("%d%03d%03d\n", $1,$2,$3); }'; }
+          if [ $(version $current_git_tag) -gt $(version $previous_docker_tag_short) ]; then
+              echo "Given git tag version is greater than previous docker tag version: $current_git_tag > $previous_docker_tag_short"
+              next_docker_tag=$current_git_tag-1
+              echo "Next docker version tag: $next_docker_tag"
+          elif [ $(version $current_git_tag) -eq $(version $previous_docker_tag_short) ]; then
+              echo "Given git tag version is equals with previous docker tag version: $current_git_tag == $previous_docker_tag_short"
+              next_docker_tag_patch=$((previous_docker_tag_patch+1))
+              next_docker_tag=$previous_docker_tag_short-$next_docker_tag_patch
+              echo "Next docker version tag: $next_docker_tag"
+          else
+              echo "Given git tag version is less than previous docker tag version: $current_git_tag < $previous_docker_tag_short"
+              echo "This is not allowed. Please provide a valid git tag version."
+              exit 1
+          fi
+          TAGS="ghcr.io/mitzkia/axosyslog:$last_version,ghcr.io/mitzkia/axosyslog:$next_docker_tag,ghcr.io/mitzkia/axosyslog:latest"
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
 
       - name: Compose Docker image tags
         id: tags

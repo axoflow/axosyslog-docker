@@ -76,26 +76,9 @@ jobs:
           path: ${{ env.TARBALL_PATH }}
           if-no-files-found: error
 
-  create-packages:
-    needs: create-release-tarball
-    uses: ./.github/workflows/create-packages.yml
-    with:
-      source-tarball-artifact-name: release-tarball
-      dbld-image-mode: build
-
-  upload-packages:
-    needs: create-packages
-    uses: ./.github/workflows/upload-packages.yml
-    with:
-      pkg-type: stable
-    secrets:
-      r2-access-key: ${{ secrets.R2_ACCESS_KEY }}
-      r2-secret-key: ${{ secrets.R2_SECRET_KEY }}
-      r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
-
   create-draft-release:
     runs-on: ubuntu-latest
-    needs: [create-release-tarball, create-packages] # TODO replace with upload-packages
+    needs: [create-release-tarball] # TODO replace with upload-packages
     steps:
       - name: Checkout AxoSyslog source
         uses: actions/checkout@v4
@@ -111,6 +94,7 @@ jobs:
             "${{ needs.create-release-tarball.outputs.RELEASE_TAG }}" \
             "${{ needs.create-release-tarball.outputs.TARBALL_NAME }}" \
             --draft \
+            --repo "${{ github.repository }}" \
             --title "${{ needs.create-release-tarball.outputs.RELEASE_NAME }}" \
             --notes-file "NEWS.md"
 

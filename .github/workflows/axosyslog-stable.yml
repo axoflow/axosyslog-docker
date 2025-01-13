@@ -49,23 +49,6 @@ jobs:
 
           echo "DRAFT_RELEASE_RUN_ID=${DRAFT_RELEASE_RUN_ID}" >> $GITHUB_OUTPUT
 
-  index-packages:
-    needs: find-draft-release-run
-    uses: ./.github/workflows/index-packages.yml
-    with:
-      pkg-type: stable
-      run-id: ${{ needs.find-draft-release-run.outputs.DRAFT_RELEASE_RUN_ID }}
-    secrets:
-      config-base64: ${{ secrets.PACKAGE_INDEXER_CONFIG_BASE64 }}
-      gpg-key-base64: ${{ secrets.PACKAGE_INDEXER_GPG_KEY_BASE64 }}
-      gpg-key-passphrase: ${{ secrets.PACKAGE_INDEXER_GPG_KEY_PASSPHRASE }}
-
-  test-packages:
-    needs: index-packages
-    uses: ./.github/workflows/test-apt-packages.yml
-    with:
-      pkg-type: stable
-
   publish-image:
     uses: ./.github/workflows/axosyslog-docker.yml
     needs: find-draft-release-run
